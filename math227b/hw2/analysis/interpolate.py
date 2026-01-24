@@ -1,5 +1,5 @@
 import math
-from pkg import lagrange
+from math227b.hw2.pkg.lagrange import lagrange
 
 
 def run_lagrange(f, a, b, n, x_eval):

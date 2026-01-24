@@ -1,7 +1,7 @@
 import unittest
 import math
 
-from pkg.lagrange.lagrange import interpolate, divided_difference, compute_polynomial
+from lagrange.lagrange import interpolate, divided_difference, compute_polynomial
             
 
 class TestDividedDifference(unittest.TestCase):
