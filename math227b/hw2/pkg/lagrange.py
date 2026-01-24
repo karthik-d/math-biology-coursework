@@ -20,6 +20,8 @@ def divided_difference(x, fvals):
 		for i in range(n - k):
 			dd[i] = (dd[i + 1] - dd[i]) / (x[i + k] - x[i])
 
+	print(len(dd))
+	print(len(x))
 	return dd
 
 
