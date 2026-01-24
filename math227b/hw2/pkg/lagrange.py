@@ -47,3 +47,29 @@ def compute_polynomial(a, x_nodes, x):
         value = value * (x - x_nodes[k]) + a[k]
 
     return value
+
+
+def interpolate(x_nodes, f, x):
+	"""
+	Lagrange interpolation at x.
+
+	Takes:
+	x_nodes : list of floats
+		Interpolation nodes
+	f : callable OR list of floats
+		Function f(x) or precomputed values f(x_i)
+	x : float
+		Evaluation point
+
+	Returns:
+	float
+		Interpolated value P(x)
+	"""
+	# Allow either f(x) or precomputed values
+	if callable(f):
+		fvals = [f(xi) for xi in x_nodes]
+	else:
+		fvals = f
+
+	a = divided_difference(x_nodes, fvals)
+	return compute_polynomial(a, x_nodes, x)
