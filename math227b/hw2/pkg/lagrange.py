@@ -24,29 +24,29 @@ def divided_difference(x, fvals):
 
 
 def compute_polynomial(a, x_nodes, x):
-    """
-    evaluate Newton-form polynomial using nested multiplication.
+	"""
+	evaluate Newton-form polynomial using nested multiplication.
 
-    Takes:
-    a : list or array of floats
-        Coefficients a1, a2, ..., a_{n+1}
-    x_nodes : list or array of floats
-        Nodes x1, x2, ..., xn
-    x : float
-        Point where polynomial is evaluated
+	Takes:
+	a : list or array of floats
+		Coefficients a1, a2, ..., a_{n+1}
+	x_nodes : list or array of floats
+		Nodes x1, x2, ..., xn
+	x : float
+		Point where polynomial is evaluated
 
-    Returns:
-    float
-        P(x)
-    """
+	Returns:
+	float
+		P(x)
+	"""
 
-    n = len(a)
-    value = a[-1]
+	n = len(a)
+	value = a[-1]
 
-    for k in range(n - 2, -1, -1):
-        value = value * (x - x_nodes[k]) + a[k]
+	for k in range(n - 2, -1, -1):
+		value = value * (x - x_nodes[k]) + a[k]
 
-    return value
+	return value
 
 
 def interpolate(x_nodes, f, x):
