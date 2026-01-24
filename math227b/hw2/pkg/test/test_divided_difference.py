@@ -1,4 +1,5 @@
 import unittest
+
 from lagrange import divided_difference
 
 
