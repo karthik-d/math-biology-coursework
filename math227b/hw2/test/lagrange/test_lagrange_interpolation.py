@@ -1,7 +1,7 @@
 import unittest
 import math
 
-from lagrange import interpolate
+from pkg.lagrange import interpolate
 
 
 class TestInterpolate(unittest.TestCase):
