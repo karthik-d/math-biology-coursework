@@ -20,7 +20,7 @@ def divided_difference(x, fvals):
 		for i in range(n - k):
 			dd[i] = (dd[i + 1] - dd[i]) / (x[i + k] - x[i])
 
-	return dd[0]
+	return dd
 
 
 def compute_polynomial(a, x_nodes, x):
