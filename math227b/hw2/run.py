@@ -4,7 +4,7 @@ from analysis.interpolate import run_lagrange, q1d_f1, q1d_f2, q1d_f3
 
 
 if __name__ == "__main__":
-    n = 100
+    n = 500
     x_eval = 0.3
 
     p1, t1 = run_lagrange(q1d_f1, -1.0, 1.0, n, x_eval)

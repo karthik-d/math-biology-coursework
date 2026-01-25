@@ -1,28 +1,25 @@
 def divided_difference(x, fvals):
-	"""
-	compute the divided difference f[x0, x1, ..., xn].
+    """
+    Compute divided difference table (2D).
 
-	Takes:
-	x : list or array of floats
-		Points x0, x1, ..., xn
-	fvals : list or array of floats
-		Function values f(x0), f(x1), ..., f(xn)
+    Returns
+    -------
+    table : list of lists
+        table[i][j] = f[x_i, ..., x_{i+j}]
+    """
+    n = len(x)
+    table = [[0.0]*n for _ in range(n)]
 
-	Returns:
-	float
-		The divided difference f[x0, x1, ..., xn]
-	"""
+    # first column: f[x_i]
+    for i in range(n):
+        table[i][0] = fvals[i]
 
-	n = len(x)
-	dd = fvals.copy() 
+    # build table
+    for j in range(1, n):
+        for i in range(n - j):
+            table[i][j] = (table[i+1][j-1] - table[i][j-1]) / (x[i+j] - x[i])
 
-	for k in range(1, n):
-		for i in range(n - k):
-			dd[i] = (dd[i + 1] - dd[i]) / (x[i + k] - x[i])
-
-	print(len(dd))
-	print(len(x))
-	return dd
+    return table[0]
 
 
 def compute_polynomial(a, x_nodes, x):
