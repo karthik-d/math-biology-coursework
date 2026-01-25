@@ -20,9 +20,6 @@ def interpolate(x, y, bc_type="natural"):
     spline : CubicSpline
         SciPy CubicSpline object.
     """
-    if bc_type not in ["natural", "not-a-knot"]:
-        raise ValueError("bc_type must be 'natural' or 'not-a-knot'")
-
     spline = CubicSpline(x, y, bc_type=bc_type)
     return spline
 
