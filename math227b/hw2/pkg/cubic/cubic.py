@@ -2,7 +2,7 @@ import numpy as np
 from scipy.interpolate import CubicSpline
 
 
-def build_cubic_spline(x, y, bc_type="natural"):
+def interpolate(x, y, bc_type="natural"):
     """
     Construct a cubic spline interpolant.
 

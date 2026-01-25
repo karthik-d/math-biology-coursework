@@ -5,6 +5,7 @@ import autograd.numpy as anp
 import numpy as np
 
 from pkg.lagrange import lagrange
+from analysis import utils
 
 
 # ---- Function to compute theoretical max derivative (n-th) ----
@@ -20,40 +21,7 @@ def max_nth_derivative(f, n, a, b, num_points=1000):
     return max(abs(yi) for yi in y_vals)
 
 
-# ---- Function to generate equally spaced nodes ----
-def generate_nodes(a, b, n):
-    return [a + i*(b-a)/(n-1) for i in range(n)]
-
-
-# ---- Function to compute theoretical Lagrange error ----
-# def theoretical_error_bound(f, n, x_nodes, x_test, num_dr_eval=500):
-#     """
-#     Compute theoretical Lagrange error bound using auto-diff for derivatives.
-#     Handles vector inputs using elementwise_grad.
-#     """
-#     # 1. Build nth derivative function
-#     df = f
-#     for _ in range(n):
-#         df = autograd.elementwise_grad(df)
-
-#     # 2. Sample dense grid to estimate max |f⁽ⁿ⁾(x)|
-#     a, b = x_nodes[0], x_nodes[-1]
-#     xs = anp.linspace(a, b, num_dr_eval)
-#     deriv_vals = anp.abs(df(xs))  # elementwise_grad works on vector xs
-#     max_f_deriv = float(anp.max(deriv_vals))
-
-#     # 3. Compute error bound at each x_test
-#     fact = math.factorial(n)
-#     error_bound = []
-#     for x in x_test:
-#         omega = 1.0
-#         for xi in x_nodes:
-#             omega *= (x - xi)
-#         error_bound.append(abs(max_f_deriv * omega / fact))
-
-#     return error_bound
-
-
+# ---- Function to compute theoretical error bound ----
 def theoretical_error_bound(f, n, x_nodes, x_test, num_dr_eval=500):
     """
     Compute theoretical Lagrange interpolation error bound safely using auto-diff.
@@ -104,7 +72,7 @@ def theoretical_error_bound(f, n, x_nodes, x_test, num_dr_eval=500):
 
 # ---- Function to compute interpolation results ----
 def interpolation_results(f, a, b, n, x_test):
-    x_nodes = generate_nodes(a, b, n)
+    x_nodes = utils.generate_nodes(a, b, n)
     p_vals = [lagrange.interpolate(x_nodes, f, x) for x in x_test]
     f_vals = [f(x) for x in x_test]
     errors = [abs(fv - pv) for fv, pv in zip(f_vals, p_vals)]
