@@ -165,17 +165,6 @@ class TestInterpolate(unittest.TestCase):
 			self.assertAlmostEqual(y, fi)
 
 
-	def test_known_function(self):
-		x_nodes = [-1.0, 0.0, 1.0]
-		f = [xi**3 for xi in x_nodes]
-
-		a = divided_difference(x_nodes, f)
-
-		for x in [-0.5, 0.5, 2.0]:
-			y = compute_polynomial(a, x_nodes[:-1], x)
-		self.assertAlmostEqual(y, x**3)
-
-
 	def test_random_polynomial_reconstruction(self):
 		coeffs = [2.0, -1.0, 0.5]
 		x_nodes = [0.0, 1.0, 2.0]
