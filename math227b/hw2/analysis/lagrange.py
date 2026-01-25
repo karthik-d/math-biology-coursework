@@ -4,6 +4,9 @@ import autograd
 import autograd.numpy as anp
 import numpy as np
 
+import jax
+import jax.numpy as jnp
+
 from pkg.lagrange import lagrange
 from analysis import utils
 
@@ -21,53 +24,66 @@ def max_nth_derivative(f, n, a, b, num_points=1000):
     return max(abs(yi) for yi in y_vals)
 
 
-# ---- Function to compute theoretical error bound ----
-def theoretical_error_bound(f, n, x_nodes, x_test, num_dr_eval=500):
+def analytical_error_bound(f_name, n, x_nodes, x_test):
     """
-    Compute theoretical Lagrange interpolation error bound safely using auto-diff.
-    Uses log-space for the node polynomial to prevent overflow.
-    
-    Parameters
-    ----------
-    f : callable
-        Autograd-compatible function (uses anp operations)
-    n : int
-        Number of nodes
-    x_nodes : list of floats
-        Equally spaced interpolation nodes
-    x_test : list/array of floats
-        Points in [a,b] where to evaluate the bound
-    num_dr_eval : int
-        Number of points to evaluate n-th derivative for max estimate
-        
-    Returns
-    -------
-    error_bound : np.array
-        Theoretical error bound at each x_test[i]
+    Analytical Lagrange bound using log-space to avoid overflow.
+    f_name: 'poly', 'sin', 'runge'
     """
-    # 1. Compute nth derivative using auto-diff
-    df = f
-    for _ in range(n):
-        df = autograd.elementwise_grad(df)
+    if f_name == 'poly':
+        max_f_deriv = 0.0   # polynomial of degree <= n → exact
+    elif f_name == 'sin':
+        max_f_deriv = 1.0   # max |sin^(n)(x)| = 1
+    elif f_name == 'runge':
+        max_f_deriv = math.factorial(n) * 25**n  # bound at x=0
+    else:
+        raise ValueError("Unknown function")
 
-    # 2. Evaluate max absolute n-th derivative on dense grid
-    a, b = x_nodes[0], x_nodes[-1]
-    xs_dense = anp.linspace(a, b, num_dr_eval)
-    deriv_vals = anp.abs(df(xs_dense))
-    max_f_deriv = float(anp.max(deriv_vals))
-
-    # 3. Factorial term
     fact = math.factorial(n)
-
-    # 4. Compute node polynomial safely in log-space
+    x_nodes_arr = np.array(x_nodes)
     error_bound = []
+    eps = 1e-16
     for x in x_test:
-        # log(|prod(x - xi)|) = sum(log(|x - xi|))
-        log_omega = np.sum(np.log(np.abs(x - np.array(x_nodes))))
-        omega = np.exp(log_omega)
-        error_bound.append(max_f_deriv * omega / fact)
+        diff = x - x_nodes_arr
+        diff = np.where(diff == 0, eps, diff)
+        log_omega = np.sum(np.log(np.abs(diff)))
+        log_bound = np.log(max_f_deriv + 1e-16) + log_omega - np.log(fact)
+        error_bound.append(np.exp(log_bound))
 
     return np.array(error_bound)
+
+
+
+# def theoretical_error_bound(f, n, x_nodes, x_test, num_dr_eval=500):
+#     """
+#     Approximate theoretical Lagrange interpolation bound efficiently.
+
+#     f : callable OR list of precomputed f(x_i)
+#     n : number of nodes
+#     x_nodes : interpolation nodes
+#     x_test : points where bound is evaluated
+#     """
+#     # Evaluate f at nodes if callable
+#     if callable(f):
+#         fvals = np.array([f(xi) for xi in x_nodes])
+#     else:
+#         fvals = np.array(f)
+
+#     # Compute divided differences
+#     a = lagrange.divided_difference(list(x_nodes), list(fvals))
+#     # a[-1] is f[x_0,...,x_n] = f^{(n)}(ξ)/n! (numerical approximation)
+#     coeff = abs(a[-1])
+
+#     # Compute |prod(x - x_i)| safely in log-space
+#     x_nodes_arr = np.array(x_nodes)
+#     error_bound = []
+#     eps = 1e-16  # avoid log(0)
+#     for x in x_test:
+#         diff = x - x_nodes_arr
+#         diff = np.where(diff == 0, eps, diff)
+#         log_prod = np.sum(np.log(np.abs(diff)))
+#         error_bound.append(coeff * np.exp(log_prod))
+
+#     return np.array(error_bound)
 
 
 # ---- Function to compute interpolation results ----
@@ -77,12 +93,13 @@ def interpolation_results(f, a, b, n, x_test):
     f_vals = [f(x) for x in x_test]
     errors = [abs(fv - pv) for fv, pv in zip(f_vals, p_vals)]
     max_error = max(errors)
+    plt.show()
     rms_error = math.sqrt(sum(e**2 for e in errors)/len(errors))
     return p_vals, f_vals, errors, max_error, rms_error, x_nodes
 
 
 # ---- Main analysis function ----
-def analyze_error(f, a, b, func_name):
+def analyze_error(f, a, b, func_name, func_str):
 	n_values = list(range(3, 15))
 	num_test_points = 500
 	x_test = [a + i*(b-a)/(num_test_points-1) for i in range(num_test_points)]
@@ -102,7 +119,7 @@ def analyze_error(f, a, b, func_name):
 		f_vals_all.append(f_vals)
 
 		# Theoretical bound
-		bound = theoretical_error_bound(f, n, x_nodes, x_test)
+		bound = analytical_error_bound(func_str, n, x_nodes, x_test)
 		max_bounds.append(max(bound))
 
 	# ---- Plot max and RMS error vs n ----
@@ -112,7 +129,7 @@ def analyze_error(f, a, b, func_name):
 	plt.plot(n_values, max_bounds, '^-', label='Max theoretical bound', alpha=0.8)
 	plt.xlabel('Number of nodes n')
 	plt.ylabel('Error')
-	plt.yscale('log')
+	# plt.yscale('log')
 	plt.title(f'Lagrange Interpolation: Error vs n for {func_name}')
 	plt.legend()
 	plt.grid(True)

@@ -2,6 +2,8 @@ import math
 import autograd.numpy as anp
 import numpy as np
 import matplotlib.pyplot as plt
+import jax
+import jax.numpy as jnp
 
 from analysis.lagrange import analyze_error as l_analyze_error
 from analysis.cubic import analyze_error as c_analyze_error
@@ -11,14 +13,13 @@ from pkg.lagrange.lagrange import compute_polynomial, interpolate, divided_diffe
 
 # ---- Q1(d) test functions ----
 def q1d_f1(x):
-    return anp.power(x, 3)*3 + anp.power(x, 2)*4 + 2*x + 1
+    return jnp.power(x, 3)*3 + jnp.power(x, 2)*4 + 2*x + 1
 
 def q1d_f2(x):
-    return anp.sin(x)
+    return jnp.sin(x)
 
 def q1d_f3(x):
-    return 1 / (1 + 25*anp.power(x, 2))
-
+    return 1 / (1 + 25*jnp.power(x, 2))
 
 
 # ---- Q2 test functions ----
@@ -109,13 +110,13 @@ if __name__ == "__main__":
 	## 4. Lagrange Interpolation Analysis.
 
 	functions = [
-	    (q1d_f1, -1.0, 1.0, "3x^3 + 4x^2 + 2x + 1"),
-	    (q1d_f2, 0.0, 2*math.pi, "sin(x)"),
-	    (q1d_f3, -1.0, 1.0, "1/(1+25x^2)")
+	    (q1d_f1, -1.0, 1.0, "3x^3 + 4x^2 + 2x + 1", 'poly'),
+	    (q1d_f2, 0.0, 2*math.pi, "sin(x)", 'sin'),
+	    (q1d_f3, -1.0, 1.0, "1/(1+25x^2)", 'runge')
 	]
 
-	for f, a, b, name in functions:
-	    l_analyze_error(f, a, b, name)
+	for f, a, b, name, string in functions:
+	    l_analyze_error(f, a, b, name, string)
 
 
 	### 5. Cubic Spline Analysis.

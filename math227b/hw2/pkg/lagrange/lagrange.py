@@ -64,11 +64,10 @@ def interpolate(x_nodes, f, x):
 	float
 		Interpolated value P(x)
 	"""
-	# Allow either f(x) or precomputed values
 	if callable(f):
 		fvals = [f(xi) for xi in x_nodes]
 	else:
 		fvals = f
 
 	a = divided_difference(x_nodes, fvals)
-	return compute_polynomial(a, x_nodes, x)
+	return compute_polynomial(a, x_nodes[:len(a)-1], x)
