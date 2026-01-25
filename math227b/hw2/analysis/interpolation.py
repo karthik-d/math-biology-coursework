@@ -27,14 +27,3 @@ def run_lagrange(f, a, b, n, x_eval):
     true_val = f(x_eval)
 
     return p, true_val
-
-
-# Part 1(d): specific test functions. ----
-def q1d_f1(x):
-    return 3*x**3 + 4*x**2 + 2*x + 1
-
-def q1d_f2(x):
-    return math.sin(x)
-
-def q1d_f3(x):
-    return 1 / (1 + 25*x**2)

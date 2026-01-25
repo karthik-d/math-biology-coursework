@@ -1,25 +1,27 @@
 import math
+import autograd.numpy as anp
 
-from analysis.interpolate import run_lagrange, q1d_f1, q1d_f2, q1d_f3
+from analysis.lagrange import analyze_error
 
 
+# ---- Q1(d) test functions ----
+def q1d_f1(x):
+    return 3*x**3 + 4*x**2 + 2*x + 1
+
+def q1d_f2(x):
+    return anp.sin(x)
+
+def q1d_f3(x):
+    return 1 / (1 + 25*x**2)
+
+
+# ---- Run analysis for each function ----
 if __name__ == "__main__":
-    n = 500
-    x_eval = 0.3
+    functions = [
+        (q1d_f1, -1.0, 1.0, "3x^3 + 4x^2 + 2x + 1"),
+        (q1d_f2, 0.0, 2*math.pi, "sin(x)"),
+        (q1d_f3, -1.0, 1.0, "1/(1+25x^2)")
+    ]
 
-    p1, t1 = run_lagrange(q1d_f1, -1.0, 1.0, n, x_eval)
-    print("f(x) = 3x^3 + 4x^2 + 2x + 1")
-    print("Lagrange Interpolated:", p1)
-    print("Exact:", t1)
-    print()
-
-    p2, t2 = run_lagrange(q1d_f2, 0.0, 2*math.pi, n, x_eval)
-    print("f(x) = sin(x)")
-    print("Lagrange Interpolated:", p2)
-    print("Exact:", t2)
-    print()
-
-    p3, t3 = run_lagrange(q1d_f3, -1.0, 1.0, n, x_eval)
-    print("f(x) = 1/(1+25x^2)")
-    print("Lagrange Interpolated:", p3)
-    print("Exact:", t3)
+    for f, a, b, name in functions:
+        analyze_error(f, a, b, name)
