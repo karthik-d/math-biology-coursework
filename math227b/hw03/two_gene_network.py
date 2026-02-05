@@ -580,34 +580,99 @@ def sweep_ecx():
 # --------------------------
 # 5. Newton-based basin-of-attraction
 # --------------------------
-def basin_of_attraction_grid(param_set, x_range=(0,5), y_range=(0,5), grid_size=50):
+def basin_of_attraction(params, x_range=(-1,7), y_range=(-1,7), grid_size=60):
     """
-    2D grid of initial guesses, colored by which steady state Newton converges to.
+    Computes and plots Newton basins of attraction for the two-gene network.
+    Detects convergence to low, unstable, and high steady states.
+    Overlays basins, nullclines, and vector field.
     """
-    F, J = two_gene_network(param_set)
+
+    F, J = two_gene_network(params)
+
+    # --- Reference steady states for classification ---
+    # (Use Newton to find them robustly)
+    low_ref, _ = newton_system(F, np.array([0.05, 0.05]), J)
+    mid_ref, _ = newton_system(F, np.array([1.0, 1.0]), J)     # unstable
+    high_ref,_ = newton_system(F, np.array([5.0, 5.0]), J)
+
+    refs = [low_ref, mid_ref, high_ref]  # order matters
+
     X = np.linspace(*x_range, grid_size)
     Y = np.linspace(*y_range, grid_size)
     basin = np.zeros((grid_size, grid_size))
 
+    # --- Sweep initial guesses ---
     for i, x0 in enumerate(X):
         for j, y0 in enumerate(Y):
             sol, info = newton_system(F, np.array([x0, y0]), J)
-            # classify solution: closer to low or high branch
-            # use thresholds at midpoint of expected low/high states
-            low_guess = np.array([0.01,0.01])
-            high_guess = np.array([5.0,5.0])
-            if np.linalg.norm(sol - low_guess) < np.linalg.norm(sol - high_guess):
-                basin[j, i] = 0  # low branch
-            else:
-                basin[j, i] = 1  # high branch
 
-    plt.figure()
-    plt.imshow(basin, origin='lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]),
-               cmap='coolwarm', alpha=0.8)
-    plt.colorbar(label='Steady state branch (0=low, 1=high)')
+            if not info['converged'] or np.any(np.isnan(sol)):
+                basin[j, i] = np.nan
+            else:
+                # classify by closest steady state
+                dists = [np.linalg.norm(sol - r) for r in refs]
+                basin[j, i] = np.argmin(dists)   # 0=low, 1=unstable, 2=high
+
+    # --- Nullclines ---
+    y_vals = np.linspace(*y_range, 400)
+    x_nullcline = (params['alpha_min'] +
+                   (params['alpha_max'] - params['alpha_min']) *
+                   y_vals**params['n'] /
+                   (params['e_cy']**params['n'] + y_vals**params['n'])
+                  ) / params['alpha_deg']
+
+    x_vals = np.linspace(*x_range, 400)
+    y_nullcline = (params['beta_min'] +
+                   (params['beta_max'] - params['beta_min']) *
+                   x_vals**params['n'] /
+                   (params['e_cx']**params['n'] + x_vals**params['n'])
+                  ) / params['beta_deg']
+
+    # --- Vector field ---
+    Xv, Yv = np.meshgrid(np.linspace(*x_range, 25),
+                         np.linspace(*y_range, 25))
+    U = np.zeros_like(Xv)
+    V = np.zeros_like(Yv)
+
+    for i in range(Xv.shape[0]):
+        for j in range(Xv.shape[1]):
+            f_val = F([Xv[i,j], Yv[i,j]])
+            U[i,j] = f_val[0]
+            V[i,j] = f_val[1]
+
+    mag = np.sqrt(U**2 + V**2)
+    U /= (mag + 1e-8)
+    V /= (mag + 1e-8)
+
+    # --- Plot ---
+    plt.figure(figsize=(8,8))
+
+    plt.imshow(basin, origin='lower',
+               extent=(x_range[0], x_range[1], y_range[0], y_range[1]),
+               cmap='viridis', alpha=0.4)
+
+    plt.colorbar(label='Newton convergence (0=low, 1=unstable, 2=high)')
+
+    # Vector field
+    plt.quiver(Xv, Yv, U, V, color='black', alpha=0.7)
+
+    # Nullclines
+    plt.plot(x_nullcline, y_vals, 'k--', linewidth=2, label='x-nullcline')
+    plt.plot(x_vals, y_nullcline, 'k:',  linewidth=2, label='y-nullcline')
+
+    # Steady states
+    plt.scatter(low_ref[0],  low_ref[1],  c='blue',   s=120, edgecolors='k', label='Low (stable)')
+    plt.scatter(mid_ref[0],  mid_ref[1],  c='orange', s=120, edgecolors='k', label='Unstable')
+    plt.scatter(high_ref[0], high_ref[1], c='red',    s=120, edgecolors='k', label='High (stable)')
+
     plt.xlabel('Initial x')
     plt.ylabel('Initial y')
-    plt.title('Basin of attraction (Newton convergence)')
+    plt.title('Newton Basins of Attraction with Vector Field')
+    plt.legend(loc='upper left')
+    plt.grid(True)
+    plt.xlim(*x_range)
+    plt.ylim(*y_range)
+    plt.tight_layout()
     plt.show()
 
 
@@ -622,14 +687,20 @@ if __name__ == "__main__":
 	# compute_bistable_solutions()
 
 	print("=== Step 3: Parameter sweeps ===")
-	sweep_n()
+	# sweep_n()
 	# sweep_alpha_max()
 	# sweep_ecx()
 
 	print("=== Step 4: Basin of attraction ===")
-	params_bistable = {
-		'alpha_min': 0.01, 'alpha_max': 5.0, 'alpha_deg': 1.0,
-		'beta_min': 0.01, 'beta_max': 5.0, 'beta_deg': 1.0,
-		'e_cx': 1.0, 'e_cy': 1.0, 'n': 3
-	}
-	# basin_of_attraction_grid(params_bistable)
+	params = {
+        'alpha_min': 0.1,
+        'alpha_max': 5.5,
+        'alpha_deg': 1.0,
+        'beta_min': 0.1,
+        'beta_max': 4.5,
+        'beta_deg': 0.9,
+        'e_cx': 1.0,
+        'e_cy': 1.5,
+        'n': 4
+    }
+	basin_of_attraction(params)
