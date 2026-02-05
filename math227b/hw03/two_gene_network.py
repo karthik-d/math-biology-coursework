@@ -169,7 +169,6 @@ def compute_bistable_solutions():
     plt.show()
 
 
-
 # --------------------------
 # 4. Parameter sweep for n and alpha_max
 # -------------------------
@@ -580,7 +579,7 @@ def sweep_ecx():
 # --------------------------
 # 5. Newton-based basin-of-attraction
 # --------------------------
-def basin_of_attraction(params, x_range=(-1,7), y_range=(-1,7), grid_size=60):
+def basin_of_attraction(params, x_range=(-1,7), y_range=(-1,7), grid_size=500):
     """
     Computes and plots Newton basins of attraction for the two-gene network.
     Detects convergence to low, unstable, and high steady states.
@@ -684,7 +683,7 @@ if __name__ == "__main__":
 	# test_newton_code()
 
 	print("=== Step 2: Compute bistable steady states ===")
-	# compute_bistable_solutions()
+	compute_bistable_solutions()
 
 	print("=== Step 3: Parameter sweeps ===")
 	# sweep_n()
@@ -692,15 +691,15 @@ if __name__ == "__main__":
 	# sweep_ecx()
 
 	print("=== Step 4: Basin of attraction ===")
-	params = {
-        'alpha_min': 0.1,
-        'alpha_max': 5.5,
-        'alpha_deg': 1.0,
-        'beta_min': 0.1,
-        'beta_max': 4.5,
-        'beta_deg': 0.9,
-        'e_cx': 1.0,
-        'e_cy': 1.5,
-        'n': 4
-    }
-	basin_of_attraction(params)
+	# params = {
+    #     'alpha_min': 0.1,
+    #     'alpha_max': 5.5,
+    #     'alpha_deg': 1.0,
+    #     'beta_min': 0.1,
+    #     'beta_max': 4.5,
+    #     'beta_deg': 0.9,
+    #     'e_cx': 1.0,
+    #     'e_cy': 1.5,
+    #     'n': 4
+    # }
+	# basin_of_attraction(params)
