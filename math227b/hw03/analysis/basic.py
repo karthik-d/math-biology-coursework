@@ -8,12 +8,14 @@ def q1b_visual_check_f1():
 	x = None
 	return F, J, x0, x
 
+
 def q1b_visual_check_f2():
 	F = lambda v: np.array([v[0]**2 - 1, v[1]**2 - 4])
 	J = lambda v: np.array([[2*v[0], 0], [0, 2*v[1]]])
 	x0 = [0.2, 1]
 	x = [1, 2]
 	return F, J, x0, x
+
 
 def q1c_f1():
     def F(v):

@@ -73,7 +73,6 @@ def plot_residual_heatmap(F, J, x0, x_true=None, grid_bounds=(0, 2), grid_points
 	# Run Newton and get trajectory
 	x_sol, info = newton_system(F, x0, J)
 	trajectory = info["trajectory"]
-	print(info)
 
 	# Convert trajectory to array for easy indexing
 	traj = np.array(trajectory)

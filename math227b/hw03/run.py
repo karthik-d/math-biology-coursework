@@ -3,7 +3,8 @@ import numpy as np
 from pkg.newton.newton import newton_system
 from pkg.newton.utils import plot_errors, plot_newton_convergence, plot_residual_heatmap
 from analysis.basic import q1b_visual_check_f1, q1b_visual_check_f2, q1c_f1, q1c_f2, q1c_f3
-from analysis.two_gene import compute_bistable_solutions, sweep_n, sweep_alpha_max, sweep_ecx, basin_of_attraction, test_newton_convergence
+from analysis.two_gene import (compute_bistable_solutions, sweep_n, sweep_alpha_max, sweep_ecx, 
+							   basin_of_attraction, test_newton_convergence)
 
 
 if __name__ == "__main__":
