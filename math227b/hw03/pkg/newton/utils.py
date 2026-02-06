@@ -9,8 +9,6 @@ def plot_errors(errors, title_suffix=""):
 	Plot Newton convergence diagnostics:
 		(1) Error history (semilog)
 		(2) Log–log plot of e_{k+1} vs e_k with slope-2 reference
-
-	This version is clean, with no region highlighting.
 	"""
 
 	errors = np.array(errors)

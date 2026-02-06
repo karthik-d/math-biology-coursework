@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def newton_system(F, x0, J, x_true=None, tol=1e-15, max_iter=50):
     """
     Solve F(x) = 0 using Newton's method for systems.

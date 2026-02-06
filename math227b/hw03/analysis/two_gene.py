@@ -2,8 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 
-
-import pkg.newton.test_functions as tf
+import analysis.basic as tf
 from pkg.newton.newton import newton_system
 from pkg.newton.utils import plot_errors
 
@@ -50,11 +49,10 @@ def two_gene_network(params):
 # --------------------------
 # 2. Code testing / verification
 # --------------------------
-def test_newton_code():
+def test_newton_convergence():
     """
     Test Newton solver on known functions.
     """
-    from pkg.newton import test_functions as tf
     test_list = [tf.q1c_f1(), tf.q1c_f2(), tf.q1c_f3()]
     for i, (F, J, x0, x_true) in enumerate(test_list, 1):
         sol, info = newton_system(F, x0, J, x_true)
@@ -172,7 +170,6 @@ def compute_bistable_solutions():
 # --------------------------
 # 4. Parameter sweep for n and alpha_max
 # -------------------------
-
 def sweep_alpha_max():
     """
     Sweep activation strength alpha_max for the asymmetric two-gene network.
@@ -668,32 +665,3 @@ def basin_of_attraction(params, x_range=(-1,7), y_range=(-1,7), grid_size=500):
     plt.tight_layout()
     plt.show()
 
-
-# --------------------------
-# 6. Main analysis workflow
-# --------------------------
-if __name__ == "__main__":
-	# print("=== Step 1: Test Newton solver on known functions ===")
-	# test_newton_code()
-
-	print("=== Step 2: Compute bistable steady states ===")
-	compute_bistable_solutions()
-
-	print("=== Step 3: Parameter sweeps ===")
-	# sweep_n()
-	# sweep_alpha_max()
-	# sweep_ecx()
-
-	print("=== Step 4: Basin of attraction ===")
-	# params = {
-    #     'alpha_min': 0.1,
-    #     'alpha_max': 5.5,
-    #     'alpha_deg': 1.0,
-    #     'beta_min': 0.1,
-    #     'beta_max': 4.5,
-    #     'beta_deg': 0.9,
-    #     'e_cx': 1.0,
-    #     'e_cy': 1.5,
-    #     'n': 4
-    # }
-	# basin_of_attraction(params)
