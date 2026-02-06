@@ -4,10 +4,6 @@ def newton_system(F, x0, J, x_true=None, tol=1e-15, max_iter=50):
     """
     Solve F(x) = 0 using Newton's method for systems.
 
-    Also records:
-      - function residuals ||F(x_k)||
-      - error residuals ||x_k - x*|| for quadratic convergence study
-
     Parameters
     ----------
     F : callable
