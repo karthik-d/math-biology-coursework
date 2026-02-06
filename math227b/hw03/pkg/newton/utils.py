@@ -46,3 +46,90 @@ def plot_errors(errors, title_suffix=""):
     plt.suptitle("Newton Convergence Diagnostics", fontsize=14, y=1.03)
     plt.tight_layout()
     plt.show()
+
+
+def plot_residual_heatmap(F, J, x0, x_true=None, grid_bounds=(-2, 2), grid_points=100, title="Residual Heatmap"):
+    """
+    Visual demonstration of Newton's method: heatmap of ||F(x,y)|| over a 2D grid.
+
+    Parameters
+    ----------
+    F : callable
+        Function F(x) returning array-like of shape (2,).
+    J : callable
+        Jacobian of F.
+    x0 : array-like
+        Initial guess for Newton's method.
+    x_true : array-like, optional
+        Ground-truth solution (for marking), default uses Newton final iterate.
+    grid_bounds : tuple
+        (min, max) bounds for x and y axes.
+    grid_points : int
+        Number of points per axis in the grid.
+    title : str
+        Figure title.
+    """
+    x_sol, info = newton_system(F, x0, J, x_true=x_true)
+
+    # Grid
+    x_vals = np.linspace(grid_bounds[0], grid_bounds[1], grid_points)
+    y_vals = np.linspace(grid_bounds[0], grid_bounds[1], grid_points)
+    X, Y = np.meshgrid(x_vals, y_vals)
+    Z = np.zeros_like(X)
+
+    # Compute residuals
+    for i in range(X.shape[0]):
+        for j in range(X.shape[1]):
+            Z[i,j] = np.linalg.norm(F([X[i,j], Y[i,j]]))
+
+    # Plot heatmap
+    plt.figure(figsize=(6,5))
+    plt.contourf(X, Y, Z, levels=50, cmap='viridis')
+    plt.colorbar(label=r"$\|F(x,y)\|$")
+    plt.scatter(x_sol[0], x_sol[1], color='red', s=50, label='Newton solution')
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.title(title)
+    plt.legend()
+    plt.grid(False)
+    plt.show()
+
+    return x_sol, info
+
+
+def plot_newton_convergence(F, J, x0, x_true=None, tol=1e-15, max_iter=50, title="Newton Convergence"):
+    """
+    Plot the residual and error history for a Newton method run.
+
+    Parameters
+    ----------
+    F : callable
+        Function F(x) returning array-like of shape (n,).
+    J : callable
+        Jacobian of F.
+    x0 : array-like
+        Initial guess.
+    x_true : array-like, optional
+        Ground-truth solution (for computing error history). Defaults to final iterate.
+    tol : float
+        Tolerance for Newton convergence.
+    max_iter : int
+        Maximum number of iterations.
+    title : str
+        Figure title.
+    """
+    x_sol, info = newton_system(F, x0, J, x_true=x_true, tol=tol, max_iter=max_iter)
+
+    iterations = np.arange(len(info["residual_history"]))
+
+    plt.figure(figsize=(6,5))
+    plt.semilogy(iterations, info["residual_history"], 'o-', label=r"Residual ||F(x_k)||")
+    plt.semilogy(iterations, info["error_history"], 's-', label=r"Error ||x_k - x*||")
+    plt.xlabel("Iteration k")
+    plt.ylabel("Value (log scale)")
+    plt.title(title)
+    plt.grid(True, which='both')
+    plt.legend()
+    plt.show()
+
+    return x_sol, info
