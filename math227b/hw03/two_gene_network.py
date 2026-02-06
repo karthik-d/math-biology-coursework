@@ -105,7 +105,7 @@ def compute_bistable_solutions():
         sol, info = newton_system(F, x0, J)
         solutions.append(sol)
         print(f"Initial guess {x0} → solution {sol}, converged={info['converged']}")
-        # plot_errors(info['error_history'])
+        plot_errors(info['error_history'], title_suffix=f'{label} State')
 
         # Check stability via Jacobian eigenvalues
         J_sol = J(sol)
@@ -174,146 +174,127 @@ def compute_bistable_solutions():
 # -------------------------
 
 def sweep_alpha_max():
-	"""
-	Sweep activation strength alpha_max for the asymmetric two-gene network.
-	Overlay Newton-inferred steady states (low, unstable, high) and analytical
-	steady states using fsolve. Also plot phase portraits (x vs y) for selected
-	alpha_max values with vector field for the lowest setting.
-	"""
+    """
+    Sweep activation strength alpha_max for the asymmetric two-gene network.
+    Plot Newton-inferred and analytical steady states and phase portraits
+    with detailed legends similar to the reference style.
+    """
 
-	def x_null(y):
-		return (params_ref['alpha_min'] + (params_ref['alpha_max'] - params_ref['alpha_min']) *
-				y**n / (params_ref['e_cy']**n + y**n)) / params_ref['alpha_deg']
+    # --- Fixed parameters ---
+    beta_max_fixed = 4.0
+    n_fixed = 4
+    params_ref = {
+        'alpha_min': 0.1, 'alpha_max': 5.5, 'alpha_deg': 1.0,
+        'beta_min': 0.1, 'beta_max': beta_max_fixed, 'beta_deg': 0.8,
+        'e_cx': 1.0, 'e_cy': 2.0,
+        'n': n_fixed
+    }
 
-	def y_null(x):
-		return (params_ref['beta_min'] + (params_ref['beta_max'] - params_ref['beta_min']) *
-				x**n / (params_ref['e_cx']**n + x**n)) / params_ref['beta_deg']
+    alpha_values = np.linspace(1.5, 6, 25)
 
-	# --- Fixed parameters ---
-	beta_max_fixed = 4.0
-	n_fixed = 4
-	params_ref = {
-		'alpha_min': 0.1, 'alpha_max': 5.5, 'alpha_deg': 1.0,
-		'beta_min': 0.1, 'beta_max': beta_max_fixed, 'beta_deg': 0.8,
-		'e_cx': 1.0, 'e_cy': 2.0,
-		'n': n_fixed
-	}
+    x_low, y_low = [], []
+    x_unst, y_unst = [], []
+    x_high, y_high = [], []
 
-	alpha_values = np.linspace(1.5, 6, 25)  # fewer points for clarity
+    # --- Newton steady states ---
+    for alpha_max in alpha_values:
+        params = params_ref.copy()
+        params['alpha_max'] = alpha_max
+        F, J = two_gene_network(params)
+        sol_low, _ = newton_system(F, [0.1,0.1], J)
+        sol_unst, _ = newton_system(F, [1,2.3], J)
+        sol_high, _ = newton_system(F, [4,4], J)
+        x_low.append(sol_low[0]); y_low.append(sol_low[1])
+        x_unst.append(sol_unst[0]); y_unst.append(sol_unst[1])
+        x_high.append(sol_high[0]); y_high.append(sol_high[1])
 
-	# --- Storage for Newton-inferred steady states ---
-	x_low, y_low = [], []
-	x_unst, y_unst = [], []
-	x_high, y_high = [], []
+    # --- Analytical steady states ---
+    x_low_ref, y_low_ref = [], []
+    x_unst_ref, y_unst_ref = [], []
+    x_high_ref, y_high_ref = [], []
 
-	# Compute Newton-inferred steady states
-	for alpha_max in alpha_values:
-		params = params_ref.copy()
-		params['alpha_max'] = alpha_max
-		F, J = two_gene_network(params)
-		sol_low, _ = newton_system(F, np.array([0.1, 0.1]), J)
-		sol_unst, _ = newton_system(F, np.array([1, 2.3]), J)
-		sol_high, _ = newton_system(F, np.array([4.0, 4.0]), J)
-		x_low.append(sol_low[0]); y_low.append(sol_low[1])
-		x_unst.append(sol_unst[0]); y_unst.append(sol_unst[1])
-		x_high.append(sol_high[0]); y_high.append(sol_high[1])
+    for alpha_max in alpha_values:
+        params_ref['alpha_max'] = alpha_max
+        n = n_fixed
 
-	# --- Analytical reference using fsolve ---
-	x_low_ref, y_low_ref = [], []
-	x_unst_ref, y_unst_ref = [], []
-	x_high_ref, y_high_ref = [], []
+        def x_null(y):
+            return (params_ref['alpha_min'] + (params_ref['alpha_max'] - params_ref['alpha_min']) *
+                    y**n / (params_ref['e_cy']**n + y**n)) / params_ref['alpha_deg']
 
-	for alpha_max in alpha_values:
-		params_ref['alpha_max'] = alpha_max
-		n = n_fixed
+        def y_null(x):
+            return (params_ref['beta_min'] + (params_ref['beta_max'] - params_ref['beta_min']) *
+                    x**n / (params_ref['e_cx']**n + x**n)) / params_ref['beta_deg']
 
-		def x_null(y):
-			return (params_ref['alpha_min'] + (params_ref['alpha_max'] - params_ref['alpha_min']) *
-					y**n / (params_ref['e_cy']**n + y**n)) / params_ref['alpha_deg']
+        sol_low  = fsolve(lambda v:[v[0]-x_null(v[1]),v[1]-y_null(v[0])],[0.1,0.1])
+        sol_unst = fsolve(lambda v:[v[0]-x_null(v[1]),v[1]-y_null(v[0])],[1,2.3])
+        sol_high = fsolve(lambda v:[v[0]-x_null(v[1]),v[1]-y_null(v[0])],[4,4])
 
-		def y_null(x):
-			return (params_ref['beta_min'] + (params_ref['beta_max'] - params_ref['beta_min']) *
-					x**n / (params_ref['e_cx']**n + x**n)) / params_ref['beta_deg']
+        x_low_ref.append(sol_low[0]); y_low_ref.append(sol_low[1])
+        x_unst_ref.append(sol_unst[0]); y_unst_ref.append(sol_unst[1])
+        x_high_ref.append(sol_high[0]); y_high_ref.append(sol_high[1])
 
-		# Low
-		y0_low = 0.1
-		x_low_sol = fsolve(lambda x: x - x_null(y0_low), 0.1)[0]
-		y_low_sol = fsolve(lambda y: y - y_null(x_low_sol), 0.1)[0]
-		x_low_ref.append(x_low_sol); y_low_ref.append(y_low_sol)
+    # --- Plots ---
+    fig, axes = plt.subplots(1, 2, figsize=(14,6))
+    ax1, ax2 = axes
 
-		# Unstable
-		sol_unst = fsolve(lambda v: [v[0] - x_null(v[1]), v[1] - y_null(v[0])], [1, 2.3])
-		x_unst_ref.append(sol_unst[0])
-		y_unst_ref.append(sol_unst[1])
+    # --- SUBPLOT 1: alpha_max vs steady states ---
+    ax1.scatter(alpha_values, x_low,  c='blue',   s=20, marker='s', label='x low (Newton)')
+    ax1.scatter(alpha_values, y_low,  c='blue',   s=20, label='y low (Newton)')
+    ax1.scatter(alpha_values, x_unst, c='orange', s=20, marker='s', label='x unstable (Newton)')
+    ax1.scatter(alpha_values, y_unst, c='orange', s=20, label='y unstable (Newton)')
+    ax1.scatter(alpha_values, x_high, c='green',  s=20, marker='s', label='x high (Newton)')
+    ax1.scatter(alpha_values, y_high, c='green',  s=20, label='y high (Newton)')
 
-		# High
-		y0_high = 5.0
-		x_high_sol = fsolve(lambda x: x - x_null(y0_high), 4.0)[0]
-		y_high_sol = fsolve(lambda y: y - y_null(x_high_sol), 4.0)[0]
-		x_high_ref.append(x_high_sol); y_high_ref.append(y_high_sol)
+    ax1.plot(alpha_values, x_low_ref,  'b-', alpha=0.7, label='x low (analytical)')
+    ax1.plot(alpha_values, x_unst_ref, 'orange', alpha=0.7, label='x unstable (analytical)')
+    ax1.plot(alpha_values, x_high_ref, 'g-', alpha=0.7, label='x high (analytical)')
+    ax1.plot(alpha_values, y_low_ref,  'b--', alpha=0.7, label='y low (analytical)')
+    ax1.plot(alpha_values, y_unst_ref, 'orange', ls='--', alpha=0.7, label='y unstable (analytical)')
+    ax1.plot(alpha_values, y_high_ref, 'g--', alpha=0.7, label='y high (analytical)')
 
-	# --- Create subplots ---
-	fig, axes = plt.subplots(1, 2, figsize=(14,6))
+    ax1.set_xlabel('alpha_max'); ax1.set_ylabel('Steady state value')
+    ax1.set_title('Steady states vs alpha_max')
+    ax1.grid(True)
+    ax1.legend(fontsize=8)
 
-	# --- Subplot 1: alpha_max vs steady states ---
-	ax1 = axes[0]
-	ax1.scatter(alpha_values, x_low, c='blue', s=20, marker='s', label='x low (Newton)')
-	ax1.scatter(alpha_values, y_low, c='blue', s=20, label='y low (Newton)')
-	ax1.scatter(alpha_values, x_unst, c='orange', s=20, marker='s', label='x unstable (Newton)')
-	ax1.scatter(alpha_values, y_unst, c='orange', s=20, label='y unstable (Newton)')
-	ax1.scatter(alpha_values, x_high, c='green', s=20, marker='s', label='x high (Newton)')
-	ax1.scatter(alpha_values, y_high, c='green', s=20, label='y high (Newton)')
+    # --- SUBPLOT 2: phase portrait ---
+    selected_indices = [0, len(alpha_values)//2, -1]
+    phase_colors = ['purple', 'teal', 'darkred']
 
-	ax1.plot(alpha_values, x_low_ref, 'b-', label='x low (analytical)', alpha=0.7)
-	ax1.plot(alpha_values, x_unst_ref, 'orange', ls='-', label='x unstable (analytical)', alpha=0.7)
-	ax1.plot(alpha_values, x_high_ref, 'g-', label='x high (analytical)', alpha=0.7)
-	ax1.plot(alpha_values, y_low_ref, 'b--', label='y low (analytical)', alpha=0.7)
-	ax1.plot(alpha_values, y_unst_ref, 'orange', ls='--', label='y unstable (analytical)', alpha=0.7)
-	ax1.plot(alpha_values, y_high_ref, 'g--', label='y high (analytical)', alpha=0.7)
+    line_handles = []
 
-	ax1.set_xlabel('Activation strength alpha_max')
-	ax1.set_ylabel('Steady state value')
-	ax1.set_title('Steady states vs alpha_max')
-	ax1.grid(True)
-	ax1.legend(fontsize=8)
+    for idx, c in zip(selected_indices, phase_colors):
+        alpha_max = alpha_values[idx]
+        params = params_ref.copy(); params['alpha_max'] = alpha_max
+        n = n_fixed
 
-	# --- Subplot 2: Phase portrait ---
-	ax2 = axes[1]
-	selected_indices = [0, len(alpha_values)//3, 2*len(alpha_values)//3, -1]
-	colors = ['blue', 'green', 'orange', 'red']
+        y_vals = np.linspace(-0.02,7,200)
+        x_null = (params['alpha_min'] + (params['alpha_max'] - params['alpha_min']) * y_vals**n /
+                  (params['e_cy']**n + y_vals**n)) / params['alpha_deg']
+        x_vals = np.linspace(-0.02,7,200)
+        y_null = (params['beta_min'] + (params['beta_max'] - params['beta_min']) * x_vals**n /
+                  (params['e_cx']**n + x_vals**n)) / params['beta_deg']
 
-	for idx, c in zip(selected_indices, colors):
-		alpha_max = alpha_values[idx]
-		params = params_ref.copy()
-		params['alpha_max'] = alpha_max
-		F, J = two_gene_network(params)
+        l1, = ax2.plot(x_null, y_vals, c=c, lw=1.5, label=f'x-null alpha_max={alpha_max:.2f}', alpha=0.8)
+        l2, = ax2.plot(x_vals, y_null, c=c, lw=1.5, ls='--', label=f'y-null alpha_max={alpha_max:.2f}', alpha=0.8)
+        line_handles.extend([l1, l2])
 
-		# Nullclines for this alpha_max
-		n = n_fixed
-		y_vals = np.linspace(0,7,200)
-		x_null = (params['alpha_min'] + (params['alpha_max'] - params['alpha_min']) * y_vals**n /
-					(params['e_cy']**n + y_vals**n)) / params['alpha_deg']
-		x_vals = np.linspace(0,7,200)
-		y_null = (params['beta_min'] + (params['beta_max'] - params['beta_min']) * x_vals**n /
-					(params['e_cx']**n + x_vals**n)) / params['beta_deg']
+        ax2.scatter(x_low[idx], y_low[idx], c=c, s=40, marker='o')
+        ax2.scatter(x_unst[idx], y_unst[idx], c=c, s=40, marker='x')
+        ax2.scatter(x_high[idx], y_high[idx], c=c, s=40, marker='s')
 
-		# Plot both nullclines.
-		ax2.plot(x_null, y_vals, c=c, lw=1.5, label=f'x-null atalpha_max={alpha_max:.2f}')
-		ax2.plot(x_vals, y_null, c='k', lw=1.5, ls='--', label='y-null (not perturbed)' if idx == 0 else None)
+    # Marker legend proxies
+    low_proxy = plt.Line2D([0],[0], marker='o', color='k', linestyle='None', label='Low steady state')
+    unst_proxy = plt.Line2D([0],[0], marker='x', color='k', linestyle='None', label='Unstable steady state')
+    high_proxy = plt.Line2D([0],[0], marker='s', color='k', linestyle='None', label='High steady state')
 
-		# Overlay Newton points
-		ax2.scatter(x_low[idx], y_low[idx], c=c, s=40)
-		ax2.scatter(x_unst[idx], y_unst[idx], c=c, s=40, marker='x')
-		ax2.scatter(x_high[idx], y_high[idx], c=c, s=40, marker='s')
+    ax2.legend(handles=line_handles + [low_proxy, unst_proxy, high_proxy], fontsize=8, loc='center right', bbox_to_anchor=(1.0, 0.2))
+    ax2.set_xlabel('x'); ax2.set_ylabel('y')
+    ax2.set_title('Phase portrait (x vs y) for selected alpha_max')
+    ax2.grid(True)
 
-	ax2.set_xlabel('x')
-	ax2.set_ylabel('y')
-	ax2.set_title('Phase portrait (x vs y) for selected alpha_max')
-	ax2.grid(True)
-	ax2.legend(fontsize=8)
-
-	plt.tight_layout()
-	plt.show()
+    plt.tight_layout()
+    plt.show()
      
 
 def sweep_n():
@@ -330,7 +311,7 @@ def sweep_n():
 		'n': 4
 	}
 
-	n_values = np.linspace(2, 6, 10)  # sweep n
+	n_values = np.linspace(1, 10, 10)  # sweep n
 	x_low, y_low = [], []
 	x_unst, y_unst = [], []
 	x_high, y_high = [], []
@@ -340,20 +321,25 @@ def sweep_n():
 		params = params_ref.copy()
 		params['n'] = n
 		
-		if n<3:
-			mid_guess = [0.5, 0.5]
-		elif n<5:	
-			mid_guess = [1.2, 1.0]
-		else:
-			mid_guess = [1, 1.5]
-
 		F, J = two_gene_network(params)
-		sol_low, _ = newton_system(F, [0.1, 0.1], J)
-		sol_unst, _ = newton_system(F, mid_guess, J)
 		sol_high, _ = newton_system(F, [4.0, 4.0], J)
-		x_low.append(sol_low[0]); y_low.append(sol_low[1])
-		x_unst.append(sol_unst[0]); y_unst.append(sol_unst[1])
-		x_high.append(sol_high[0]); y_high.append(sol_high[1])
+
+		if n < 3:
+			x_high.append(sol_high[0]); y_high.append(sol_high[1])
+			x_unst.append(np.nan); y_unst.append(np.nan)
+			x_low.append(np.nan); y_low.append(np.nan)
+		else:
+			if n < 5:
+				mid_guess = [1.2, 1.0]
+			else:
+				mid_guess = [1, 1.5]
+
+			sol_unst, _ = newton_system(F, mid_guess, J)
+			sol_low, _ = newton_system(F, [0.1, 0.1], J)
+
+			x_low.append(sol_low[0]); y_low.append(sol_low[1])
+			x_unst.append(sol_unst[0]); y_unst.append(sol_unst[1])
+			x_high.append(sol_high[0]); y_high.append(sol_high[1])
 
 	# --- Analytical steady states ---
 	x_low_ref, y_low_ref = [], []
@@ -363,13 +349,6 @@ def sweep_n():
 	for n in n_values:
 		params = params_ref.copy()
 		params['n'] = n
-            
-		if n<3:
-			mid_guess = [0.5, 0.5]
-		elif n<5:	
-			mid_guess = [1.2, 1.0]
-		else:
-			mid_guess = [1, 1.5]
 
 		def x_null(y):
 			return (params['alpha_min'] + (params['alpha_max'] - params['alpha_min']) *
@@ -379,20 +358,28 @@ def sweep_n():
 			return (params['beta_min'] + (params['beta_max'] - params['beta_min']) *
 					x**n / (params['e_cx']**n + x**n)) / params['beta_deg']
 
-		# Low
-		sol_low = fsolve(lambda v: [v[0]-x_null(v[1]), v[1]-y_null(v[0])], [0.1, 0.1])
-		x_low_ref.append(sol_low[0]); y_low_ref.append(sol_low[1])
-		# Unstable
-		sol_unst = fsolve(lambda v: [v[0]-x_null(v[1]), v[1]-y_null(v[0])], mid_guess)
-		x_unst_ref.append(sol_unst[0]); y_unst_ref.append(sol_unst[1])
-		# High
 		sol_high = fsolve(lambda v: [v[0]-x_null(v[1]), v[1]-y_null(v[0])], [4.0, 4.0])
 		x_high_ref.append(sol_high[0]); y_high_ref.append(sol_high[1])
 
-	# --- Plots ---
+		if n < 3:
+			x_unst_ref.append(np.nan); y_unst_ref.append(np.nan)
+			x_low_ref.append(np.nan); y_low_ref.append(np.nan)
+		else:
+			if n < 5:
+				mid_guess = [1.2, 1.0]
+			else:
+				mid_guess = [1, 1.5]
+
+			sol_unst = fsolve(lambda v: [v[0]-x_null(v[1]), v[1]-y_null(v[0])], mid_guess)
+			sol_low = fsolve(lambda v: [v[0]-x_null(v[1]), v[1]-y_null(v[0])], [0.1, 0.1])
+
+			x_unst_ref.append(sol_unst[0]); y_unst_ref.append(sol_unst[1])
+			x_low_ref.append(sol_low[0]); y_low_ref.append(sol_low[1])
+
+		# --- Plots ---
 	fig, axes = plt.subplots(1, 2, figsize=(14,6))
 
-	# Subplot 1: n vs steady states
+	# ---------- SUBPLOT 1 ----------
 	ax1 = axes[0]
 	ax1.scatter(n_values, x_low, c='blue', s=20, marker='s', label='x low (Newton)')
 	ax1.scatter(n_values, y_low, c='blue', s=20, label='y low (Newton)')
@@ -402,7 +389,7 @@ def sweep_n():
 	ax1.scatter(n_values, y_high, c='green', s=20, label='y high (Newton)')
 
 	ax1.plot(n_values, x_low_ref, 'b-', alpha=0.7, label='x low (analytical)')
-	ax1.plot(n_values, x_unst_ref, 'orange', ls='-', alpha=0.7, label='x unstable (analytical)')
+	ax1.plot(n_values, x_unst_ref, 'orange', alpha=0.7, label='x unstable (analytical)')
 	ax1.plot(n_values, x_high_ref, 'g-', alpha=0.7, label='x high (analytical)')
 	ax1.plot(n_values, y_low_ref, 'b--', alpha=0.7, label='y low (analytical)')
 	ax1.plot(n_values, y_unst_ref, 'orange', ls='--', alpha=0.7, label='y unstable (analytical)')
@@ -412,168 +399,175 @@ def sweep_n():
 	ax1.set_ylabel('Steady state value')
 	ax1.set_title('Steady states vs n')
 	ax1.grid(True)
-	ax1.legend(fontsize=8)
+	ax1.legend(loc='center right', fontsize=8, bbox_to_anchor=(1.0, 0.6))
 
-	# Subplot 2: phase portrait
+	# ---------- SUBPLOT 2 ----------
 	ax2 = axes[1]
 	selected_indices = [0, len(n_values)//2, -1]
-	colors = ['blue','green','orange','red']
 
-	for idx, c in zip(selected_indices, colors):
+	# Independent color scheme for subplot 2
+	phase_colors = ['purple', 'teal', 'darkred']
+
+	line_handles = []
+
+	for idx, c in zip(selected_indices, phase_colors):
 		n = n_values[idx]
 		params = params_ref.copy(); params['n'] = n
-		F, J = two_gene_network(params)
 
-		# Nullclines
-		y_vals = np.linspace(0,7,200)
+		y_vals = np.linspace(-0.02,7,200)
 		x_null = (params['alpha_min'] + (params['alpha_max'] - params['alpha_min']) * y_vals**n /
 					(params['e_cy']**n + y_vals**n)) / params['alpha_deg']
-		x_vals = np.linspace(0,7,200)
+		x_vals = np.linspace(-0.02,7,200)
 		y_null = (params['beta_min'] + (params['beta_max'] - params['beta_min']) * x_vals**n /
 					(params['e_cx']**n + x_vals**n)) / params['beta_deg']
 
-		ax2.plot(x_null, y_vals, c=c, lw=1.5, label=f'x-null n={n:.2f}', alpha=0.7)
-		ax2.plot(x_vals, y_null, c=c, lw=1.5, ls='--', label=f'y-null n={n:.2f}', alpha=0.7)
+		l1, = ax2.plot(x_null, y_vals, c=c, lw=1.5, label=f'x-null n={n:.2f}', alpha=0.8)
+		l2, = ax2.plot(x_vals, y_null, c=c, lw=1.5, ls='--', label=f'y-null n={n:.2f}', alpha=0.8)
+		line_handles.extend([l1, l2])
 
-		# Newton points
-		ax2.scatter(x_low[idx], y_low[idx], c=c, s=40)
-		ax2.scatter(x_unst[idx], y_unst[idx], c=c, s=40, marker='x')
-		print(x_unst[idx], y_unst[idx], idx)
-		ax2.scatter(x_high[idx], y_high[idx], c=c, s=40, marker='s')
+		ax2.scatter(x_low[idx], y_low[idx], c=c, s=40, marker='o')
+		if not np.isnan(x_unst[idx]):
+			ax2.scatter(x_unst[idx], y_unst[idx], c=c, s=40, marker='x')
+		if not np.isnan(x_high[idx]):
+			ax2.scatter(x_high[idx], y_high[idx], c=c, s=40, marker='s')
+
+	# Marker legend entries
+	low_proxy = plt.Line2D([0], [0], marker='o', color='k', linestyle='None', label='Low steady state')
+	unst_proxy = plt.Line2D([0], [0], marker='x', color='k', linestyle='None', label='Unstable steady state')
+	high_proxy = plt.Line2D([0], [0], marker='s', color='k', linestyle='None', label='High steady state')
+
+	# Combine line + marker legends
+	ax2.legend(handles=line_handles + [low_proxy, unst_proxy, high_proxy],
+			   fontsize=8, loc='best')
 
 	ax2.set_xlabel('x'); ax2.set_ylabel('y')
 	ax2.set_title('Phase portrait (x vs y) for selected n')
 	ax2.grid(True)
-	ax2.legend(fontsize=8)
 
 	plt.tight_layout()
 	plt.show()
 
 
 def sweep_ecx():
-    """
-    Sweep activation threshold e_cx for the asymmetric two-gene network.
-    Plot Newton-inferred steady states and analytical steady states (low, unstable, high),
-    along with phase portraits for selected e_cx values.
-    """
-    # --- Fixed parameters ---
-    params_ref = {
-        'alpha_min': 0.1, 'alpha_max': 5.5, 'alpha_deg': 1.0,
-        'beta_min': 0.1, 'beta_max': 4.0, 'beta_deg': 0.8,
-        'e_cx': 1.0, 'e_cy': 2.0,
-        'n': 4
-    }
+	"""
+	Sweep activation threshold e_cx for the asymmetric two-gene network.
+	Plot Newton-inferred and analytical steady states with detailed legend.
+	"""
 
-    ecx_values = np.linspace(1, 3.0, 10)  # sweep e_cx
-    x_low, y_low = [], []
-    x_unst, y_unst = [], []
-    x_high, y_high = [], []
+	params_ref = {
+		'alpha_min': 0.1, 'alpha_max': 5.5, 'alpha_deg': 1.0,
+		'beta_min': 0.1, 'beta_max': 4.0, 'beta_deg': 0.8,
+		'e_cx': 1.0, 'e_cy': 2.0,
+		'n': 4
+	}
 
-    # --- Newton-inferred steady states ---
-    for ecx in ecx_values:
-        params = params_ref.copy()
-        params['e_cx'] = ecx
-        mid_guess = [1, 1.5] if ecx < 2.0 else [2, 1.5]  # adjust guess for unstable state based on expected shift
-        F, J = two_gene_network(params)
-        sol_low, _ = newton_system(F, [0.1, 0.1], J)
-        sol_unst, _ = newton_system(F, mid_guess, J)
-        sol_high, _ = newton_system(F, [4.0, 4.0], J)
-        x_low.append(sol_low[0]); y_low.append(sol_low[1])
-        x_unst.append(sol_unst[0]); y_unst.append(sol_unst[1])
-        x_high.append(sol_high[0]); y_high.append(sol_high[1])
+	ecx_values = np.linspace(1, 4, 20)
+	x_low, y_low = [], []; x_unst, y_unst = [], []; x_high, y_high = [], []
 
-    # --- Analytical steady states ---
-    x_low_ref, y_low_ref = [], []
-    x_unst_ref, y_unst_ref = [], []
-    x_high_ref, y_high_ref = [], []
+	# --- Newton ---
+	for ecx in ecx_values:
+		params = params_ref.copy(); params['e_cx'] = ecx
+		if ecx < 2:
+			mid_guess = [1,1.5]
+		elif ecx < 3.4:
+			mid_guess = [2,1.5]
+		else:
+			mid_guess = [3.7, 2.8] 
+		
+		F, J = two_gene_network(params)
+		sol_low,_ = newton_system(F,[0.1,0.1],J)
+		sol_unst,_ = newton_system(F,mid_guess,J)
+		sol_high,_ = newton_system(F,[4,4],J)
+		x_low.append(sol_low[0]); y_low.append(sol_low[1])
+		x_unst.append(sol_unst[0]); y_unst.append(sol_unst[1])
+		x_high.append(sol_high[0]); y_high.append(sol_high[1])
 
-    for ecx in ecx_values:
-        params = params_ref.copy()
-        params['e_cx'] = ecx
-        n = params['n']
-        mid_guess = [1, 1.5] if ecx < 2.0 else [2, 1.5]  # adjust guess for unstable state based on expected shift
+	# --- Analytical ---
+	x_low_ref, y_low_ref = [], []; x_unst_ref, y_unst_ref = [], []; x_high_ref, y_high_ref = [], []
+	for ecx in ecx_values:
+		params = params_ref.copy(); params['e_cx'] = ecx
+		n = params['n']
+		if ecx < 2:
+			mid_guess = [1,1.5]
+		elif ecx < 3.4:
+			mid_guess = [2,1.5]
+		else:
+			mid_guess = [3.7, 2.8] 
 
-        def x_null(y):
-            return (params['alpha_min'] + (params['alpha_max'] - params['alpha_min']) *
-                    y**n / (params['e_cy']**n + y**n)) / params['alpha_deg']
+		def x_null(y):
+			return (params['alpha_min'] + (params['alpha_max'] - params['alpha_min'])*y**n /
+					(params['e_cy']**n + y**n)) / params['alpha_deg']
+		def y_null(x):
+			return (params['beta_min'] + (params['beta_max'] - params['beta_min'])*x**n /
+					(params['e_cx']**n + x**n)) / params['beta_deg']
 
-        def y_null(x):
-            return (params['beta_min'] + (params['beta_max'] - params['beta_min']) *
-                    x**n / (params['e_cx']**n + x**n)) / params['beta_deg']
+		sol_low  = fsolve(lambda v:[v[0]-x_null(v[1]),v[1]-y_null(v[0])],[0.1,0.1])
+		sol_unst = fsolve(lambda v:[v[0]-x_null(v[1]),v[1]-y_null(v[0])],mid_guess)
+		sol_high = fsolve(lambda v:[v[0]-x_null(v[1]),v[1]-y_null(v[0])],[4,4])
 
-        # Low
-        sol_low = fsolve(lambda v: [v[0]-x_null(v[1]), v[1]-y_null(v[0])], [0.1,0.1])
-        x_low_ref.append(sol_low[0]); y_low_ref.append(sol_low[1])
-        # Unstable
-        sol_unst = fsolve(lambda v: [v[0]-x_null(v[1]), v[1]-y_null(v[0])], mid_guess)
-        x_unst_ref.append(sol_unst[0]); y_unst_ref.append(sol_unst[1])
-        # High
-        sol_high = fsolve(lambda v: [v[0]-x_null(v[1]), v[1]-y_null(v[0])], [4.0,4.0])
-        x_high_ref.append(sol_high[0]); y_high_ref.append(sol_high[1])
+		x_low_ref.append(sol_low[0]); y_low_ref.append(sol_low[1])
+		x_unst_ref.append(sol_unst[0]); y_unst_ref.append(sol_unst[1])
+		x_high_ref.append(sol_high[0]); y_high_ref.append(sol_high[1])
 
-    # --- Plots ---
-    fig, axes = plt.subplots(1, 2, figsize=(14,6))
+	fig, axes = plt.subplots(1,2,figsize=(14,6))
+	ax1, ax2 = axes
 
-    # Subplot 1: e_cx vs steady states
-    ax1 = axes[0]
-    ax1.scatter(ecx_values, x_low, c='blue', s=20, marker='s', label='x low (Newton)')
-    ax1.scatter(ecx_values, y_low, c='blue', s=20, label='y low (Newton)')
-    ax1.scatter(ecx_values, x_unst, c='orange', s=20, marker='s', label='x unstable (Newton)')
-    ax1.scatter(ecx_values, y_unst, c='orange', s=20, label='y unstable (Newton)')
-    ax1.scatter(ecx_values, x_high, c='green', s=20, marker='s', label='x high (Newton)')
-    ax1.scatter(ecx_values, y_high, c='green', s=20, label='y high (Newton)')
+	# --- SUBPLOT 1 ---
+	ax1.scatter(ecx_values, x_low,  c='blue',   s=20, marker='s', label='x low (Newton)')
+	ax1.scatter(ecx_values, y_low,  c='blue',   s=20, label='y low (Newton)')
+	ax1.scatter(ecx_values, x_unst, c='orange', s=20, marker='s', label='x unstable (Newton)')
+	ax1.scatter(ecx_values, y_unst, c='orange', s=20, label='y unstable (Newton)')
+	ax1.scatter(ecx_values, x_high, c='green',  s=20, marker='s', label='x high (Newton)')
+	ax1.scatter(ecx_values, y_high, c='green',  s=20, label='y high (Newton)')
 
-    ax1.plot(ecx_values, x_low_ref, 'b-', alpha=0.7, label='x low (analytical)')
-    ax1.plot(ecx_values, x_unst_ref, 'orange', ls='-', alpha=0.7, label='x unstable (analytical)')
-    ax1.plot(ecx_values, x_high_ref, 'g-', alpha=0.7, label='x high (analytical)')
-    ax1.plot(ecx_values, y_low_ref, 'b--', alpha=0.7, label='y low (analytical)')
-    ax1.plot(ecx_values, y_unst_ref, 'orange', ls='--', alpha=0.7, label='y unstable (analytical)')
-    ax1.plot(ecx_values, y_high_ref, 'g--', alpha=0.7, label='y high (analytical)')
+	ax1.plot(ecx_values, x_low_ref,  'b-', alpha=0.7, label='x low (analytical)')
+	ax1.plot(ecx_values, x_unst_ref, 'orange', alpha=0.7, label='x unstable (analytical)')
+	ax1.plot(ecx_values, x_high_ref, 'g-', alpha=0.7, label='x high (analytical)')
+	ax1.plot(ecx_values, y_low_ref,  'b--', alpha=0.7, label='y low (analytical)')
+	ax1.plot(ecx_values, y_unst_ref, 'orange', ls='--', alpha=0.7, label='y unstable (analytical)')
+	ax1.plot(ecx_values, y_high_ref, 'g--', alpha=0.7, label='y high (analytical)')
 
-    ax1.set_xlabel('e_cx')
-    ax1.set_ylabel('Steady state value')
-    ax1.set_title('Steady states vs e_cx')
-    ax1.grid(True)
-    ax1.legend(fontsize=8)
+	ax1.set_xlabel('e_cx'); ax1.set_ylabel('Steady state value')
+	ax1.set_title('Steady states vs e_cx')
+	ax1.grid(True)
+	ax1.legend(loc='center left', fontsize=8)
 
-    # Subplot 2: phase portrait
-    ax2 = axes[1]
-    selected_indices = [0, len(ecx_values)//3, 2*len(ecx_values)//3, -1]
-    colors = ['blue','green','orange','red']
+	# --- SUBPLOT 2 ---
+	selected_indices = [0, len(ecx_values)//2, -1]
+	phase_colors = ['purple','teal','darkred']
+	line_handles = []
 
-    for idx, c in zip(selected_indices, colors):
-        ecx = ecx_values[idx]
-        params = params_ref.copy(); params['e_cx'] = ecx
-        n = params['n']
-        F, J = two_gene_network(params)
+	for idx, c in zip(selected_indices, phase_colors):
+		ecx = ecx_values[idx]
+		params = params_ref.copy(); params['e_cx'] = ecx
+		n = params['n']
 
-        # Nullclines
-        y_vals = np.linspace(0,7,200)
-        x_null = (params['alpha_min'] + (params['alpha_max'] - params['alpha_min']) * y_vals**n /
-                  (params['e_cy']**n + y_vals**n)) / params['alpha_deg']
-        x_vals = np.linspace(0,7,200)
-        y_null = (params['beta_min'] + (params['beta_max'] - params['beta_min']) * x_vals**n /
-                  (params['e_cx']**n + x_vals**n)) / params['beta_deg']
+		y_vals = np.linspace(-0.02,7,200)
+		x_null = (params['alpha_min'] + (params['alpha_max'] - params['alpha_min']) * y_vals**n /
+					(params['e_cy']**n + y_vals**n)) / params['alpha_deg']
+		x_vals = np.linspace(-0.02,7,200)
+		y_null = (params['beta_min'] + (params['beta_max'] - params['beta_min']) * x_vals**n /
+					(params['e_cx']**n + x_vals**n)) / params['beta_deg']
 
-		# y-null.
-        ax2.plot(x_vals, y_null, c=c, lw=1.5, ls='--', label=f'y-null (no change)')
+		l1, = ax2.plot(x_null, y_vals, c=c, lw=1.5, label=f'x-null e_cx={ecx:.2f}', alpha=0.8)
+		l2, = ax2.plot(x_vals, y_null, c=c, lw=1.5, ls='--', label=f'y-null e_cx={ecx:.2f}', alpha=0.8)
+		line_handles.extend([l1,l2])
 
-        # Newton points
-        ax2.scatter(x_low[idx], y_low[idx], c=c, s=40)
-        ax2.scatter(x_unst[idx], y_unst[idx], c=c, s=40, marker='x')
-        ax2.scatter(x_high[idx], y_high[idx], c=c, s=40, marker='s')
-        
-	# x-null.
-    ax2.plot(x_null, y_vals, c=c, lw=1.5, label=f'x-null e_cx={ecx:.2f}')
+		ax2.scatter(x_low[idx], y_low[idx], c=c, s=40, marker='o')
+		ax2.scatter(x_unst[idx], y_unst[idx], c=c, s=40, marker='x')
+		ax2.scatter(x_high[idx], y_high[idx], c=c, s=40, marker='s')
 
-    ax2.set_xlabel('x'); ax2.set_ylabel('y')
-    ax2.set_title('Phase portrait (x vs y) for selected e_cx')
-    ax2.grid(True)
-    ax2.legend(fontsize=8)
+	low_proxy = plt.Line2D([0],[0], marker='o', color='k', linestyle='None', label='Low steady state')
+	unst_proxy = plt.Line2D([0],[0], marker='x', color='k', linestyle='None', label='Unstable steady state')
+	high_proxy = plt.Line2D([0],[0], marker='s', color='k', linestyle='None', label='High steady state')
 
-    plt.tight_layout()
-    plt.show()
+	ax2.legend(handles=line_handles + [low_proxy, unst_proxy, high_proxy], fontsize=8, loc='best')
+	ax2.set_xlabel('x'); ax2.set_ylabel('y')
+	ax2.set_title('Phase portrait (x vs y) for selected e_cx')
+	ax2.grid(True)
 
+	plt.tight_layout()
+	plt.show()
 
 
 # --------------------------

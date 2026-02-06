@@ -1,6 +1,6 @@
 import numpy as np
 
-def newton_system(F, x0, J=None, x_true=None, tol=1e-15, max_iter=50):
+def newton_system(F, x0, J, x_true=None, tol=1e-15, max_iter=50):
     """
     Solve F(x) = 0 using Newton's method for systems.
 
@@ -34,16 +34,6 @@ def newton_system(F, x0, J=None, x_true=None, tol=1e-15, max_iter=50):
 
     x = np.asarray(x0, dtype=float)
 
-    def finite_diff_jacobian(F, x, eps=1e-15):
-        n = len(x)
-        J = np.zeros((n, n))
-        Fx = F(x)
-        for j in range(n):
-            dx = np.zeros(n)
-            dx[j] = eps
-            J[:, j] = (F(x + dx) - Fx) / eps
-        return J
-
     residuals_l = []     # ||F(x_k)||
     iterates = []        # store x_k for later error computation
 
@@ -56,11 +46,7 @@ def newton_system(F, x0, J=None, x_true=None, tol=1e-15, max_iter=50):
 
         if normF < tol:
             break
-
-        if J is None:
-            Jx = finite_diff_jacobian(F, x)
-        else:
-            Jx = np.asarray(J(x), dtype=float)
+        Jx = np.asarray(J(x), dtype=float)
 
         try:
             delta = np.linalg.solve(Jx, -Fx)
@@ -70,7 +56,6 @@ def newton_system(F, x0, J=None, x_true=None, tol=1e-15, max_iter=50):
                 "reason": "Jacobian singular",
                 "residual_history": residuals_l
             }
-
         x = x + delta
 
     # Decide reference solution x*
