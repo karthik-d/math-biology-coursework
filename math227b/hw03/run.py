@@ -18,9 +18,15 @@ if __name__ == "__main__":
         
 	
 	# B. visual verification.
-    F, J, x0, x_true = q1b_visual_check_f()
-    plot_residual_heatmap(F, J, x0, x_true, title="Visual Check: Residual Heatmap")
-    plot_newton_convergence(F, J, x0, x_true, title="Visual Check: Convergence History")
+	# function N4.
+	F, J, x0, x_true = q1b_visual_check_f1()
+	plot_residual_heatmap(F, J, x0, x_true, title="Residual Heatmap")
+	plot_newton_convergence(F, J, x0, x_true, title="Convergence History")
+	
+	# function N2.
+	F, J, x0, x_true = q1b_visual_check_f2()
+	plot_residual_heatmap(F, J, x0, x_true, title="Residual Heatmap", grid_bounds=(0, 3))
+	plot_newton_convergence(F, J, x0, x_true, title="Convergence History")
     
 
 

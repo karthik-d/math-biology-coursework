@@ -100,9 +100,9 @@ def plot_residual_heatmap(F, J, x0, x_true=None, grid_bounds=(0, 2), grid_points
 	if len(traj) > 1:
 		plt.plot(traj[:-1,0], traj[:-1,1], 'w--', label='Trajectory', marker='o')  # dotted line for trajectory
 	# final point.
-	plt.scatter(traj[-1,0], traj[-1,1], color='red', s=50, label='Newton solution') 
+	plt.scatter(traj[-1,0], traj[-1,1], color='red', s=50, label='Newton solution', zorder=5, alpha=0.4) 
 	# mark initial guess
-	plt.scatter(traj[0,0], traj[0,1], color='blue', s=40, label='Initial guess', alpha=0.5)
+	plt.scatter(traj[0,0], traj[0,1], color='blue', s=40, label='Initial guess', zorder=5, alpha=0.4)
 	plt.xlabel("x")
 	plt.ylabel("y")
 	plt.title(title)
