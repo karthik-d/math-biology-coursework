@@ -72,5 +72,6 @@ def newton_system(F, x0, J, x_true=None, tol=1e-15, max_iter=50):
         "iterations": len(residuals_l),
         "residual": residuals_l[-1],
         "residual_history": residuals_l,
-        "error_history": error_history
+        "error_history": error_history,
+        "trajectory": np.array(iterates)
     }

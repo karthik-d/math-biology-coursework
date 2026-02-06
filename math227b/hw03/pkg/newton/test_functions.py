@@ -1,6 +1,13 @@
 import numpy as np
 
 
+def q1b_visual_check_f():
+	F = lambda v: np.array([np.log(v[0] + 2) + v[1]**2 - 3, v[0]*v[1] - 1])
+	J = lambda v: np.array([[1/(v[0] + 2), 2*v[1]], [v[1], v[0]]])
+	x0 = np.array([1.9, 1.85])  
+	x = None
+	return F, J, x0, x
+
 def q1c_f1():
     def F(v):
         x, y = v
