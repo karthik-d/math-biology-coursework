@@ -11,23 +11,23 @@ def backtracking_line_search(f, grad, x, p, alpha0=1.0, rho=0.5, c=1e-4):
     return alpha
 
 
-def steepest_descent(f, grad, x0, tol=1e-6, maxiter=10000):
-    x = np.array(x0, dtype=float)
-    history = [x.copy()]
+def steepest_descent(f, grad, x0, tol=1e-6, maxiter=int(1e7)):
+	x = np.array(x0, dtype=float)
+	history = [x.copy()]
 
-    for k in range(maxiter):
-        g = grad(x)
-        norm_g = np.linalg.norm(g)
+	for k in range(maxiter):
+		g = grad(x)
+		norm_g = np.linalg.norm(g)
 
-        if norm_g < tol:
-            print(f"Converged in {k} iterations.")
-            return x, np.array(history)
+		if norm_g < tol:
+			print(f"Converged in {k} iterations.")
+			return x, np.array(history)
 
-        p = -g  # steepest descent direction
-        alpha = backtracking_line_search(f, grad, x, p)
+		p = -g  # steepest descent direction
+		alpha = backtracking_line_search(f, grad, x, p)
+		print(alpha)
+		x = x + alpha*p
+		history.append(x.copy())
 
-        x = x + alpha*p
-        history.append(x.copy())
-
-    print("Maximum iterations reached.")
-    return x, np.array(history)
+	print("Maximum iterations reached.")
+	return x, np.array(history)
