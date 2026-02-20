@@ -21,13 +21,14 @@ def steepest_descent(f, grad, x0, tol=1e-6, maxiter=int(1e7)):
 
 		if norm_g < tol:
 			print(f"Converged in {k} iterations.")
+			print(x)
 			return x, np.array(history)
 
 		p = -g  # steepest descent direction
 		alpha = backtracking_line_search(f, grad, x, p)
-		print(alpha)
 		x = x + alpha*p
 		history.append(x.copy())
 
 	print("Maximum iterations reached.")
+	print(x)
 	return x, np.array(history)

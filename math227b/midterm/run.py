@@ -29,7 +29,6 @@ if __name__=='__main__':
 	# # Error at t = 4
 	# y_exact_tf = y(params['tf'])
 	# rk_error = abs(y_rk[-1] - y_exact_tf)
-	# print(rk_error)
 
 	
 	## 2. SYSTEMATIC TEST: RK4.
@@ -65,6 +64,13 @@ if __name__=='__main__':
 	# show the converging points.
 	# plot error against iteraitons?
 	# viz. positive semi-definite somehow.
+
+
+
+	# Multiple initial conditions (basin of attraction)
+	# Step size vs iteration
+	# Function value vs iteration
+	# Contour plot + path (instead of raw heatmap)
 
 
 
