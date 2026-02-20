@@ -18,7 +18,7 @@ def plot_solutions(t_rk, y_rk, t_ex, y_ex):
     plt.show()
     
 
-def plot_rk4_solutions(f, y_exact_func, t0, y0, tf, h_values, reference_h=None):
+def plot_rk4_solutions(f, y_exact_func, t0, y0, tf, h_values, reference_h=None, title=""):
 	"""Plot RK4 solutions vs exact solution for multiple step sizes."""
 	n_h = len(h_values)
 
@@ -43,45 +43,14 @@ def plot_rk4_solutions(f, y_exact_func, t0, y0, tf, h_values, reference_h=None):
 		if i == 0:
 			plt.legend(fontsize=8)
 
-	plt.suptitle("Solutions")
+	plt.suptitle(f"Solutions: {title}")
 	plt.tight_layout()
 	plt.show()
+     
 
-
-def plot_rk4_relative_error(f, y_exact_func, t0, y0, tf, h_values, reference_h=None):
-	"""Plot relative error |y_num - y_exact| / |y_exact| for multiple step sizes."""
-	n_h = len(h_values)
-
-	if y_exact_func is None and reference_h is not None:
-		t_ref, y_ref = rk4_solver(f, t0, y0, reference_h, tf)
-		y_exact_func = lambda t: np.interp(t, t_ref, y_ref)
-
-	plt.figure(figsize=(20*n_h, 4))
-
-	for i, h in enumerate(h_values):
-		t_num, y_num = rk4_solver(f, t0, y0, h, tf)
-		y_exact_vals = y_exact_func(t_num)
-		rel_error = np.abs(y_num - y_exact_vals) / np.maximum(np.abs(y_exact_vals), 1e-14)
-		
-		plt.subplot(1, n_h, i+1)
-		plt.plot(t_num, rel_error, 'r-')
-		plt.xlabel('t')
-		plt.ylabel('Relative Error')
-		plt.title(f'h={h}')
-		plt.grid(True)
-            
-		if i == 0:
-			plt.gca().set_ylabel('Relative Error')
-		else:
-			plt.gca().set_yticklabels([])
-
-	plt.suptitle("Relative Error")
-	plt.tight_layout()
-	plt.show()
-
-def plot_rk4_local_error(f, y_exact_func, t0, y0, tf, h_values, reference_h=None):
+def plot_rk4_local_and_global_error(f, y_exact_func, t0, y0, tf, h_values, reference_h=None, title=""):
     """
-    Plot estimated local truncation error per step for multiple step sizes (RK4).
+    Plot RK4 local truncation error and global error for multiple step sizes.
     
     Parameters
     ----------
@@ -112,29 +81,38 @@ def plot_rk4_local_error(f, y_exact_func, t0, y0, tf, h_values, reference_h=None
         t_half, y_half = rk4_solver(f, t0, y0, h/2, tf)
         y_half_interp = np.interp(t_num, t_half, y_half)
 
-        # RK4 LTE estimate
+        # Local truncation error estimate
         local_error_est = np.abs(y_num - y_half_interp) / (2**4 - 1)
 
+        # Global error at each step
+        y_exact_vals = y_exact_func(t_num)
+        global_error = np.abs(y_num - y_exact_vals)
+
+        # Subplot for this h
         ax = plt.subplot(1, n_h, i+1)
-        ax.plot(t_num, local_error_est, 'm-')
+        ax.plot(t_num, local_error_est, 'b-', label='Local LTE')
+        ax.plot(t_num, global_error, 'g-', label='Global error')
         ax.grid(True)
         ax.set_title(f'h = {h}')
 
         # Only show y-axis label on first subplot
         if i == 0:
-            ax.set_ylabel('LTE estimate')
+            ax.set_ylabel('Error')
         else:
             ax.set_yticklabels([])
 
-        # Only show x-axis label on the bottom row / last subplot
         ax.set_xlabel('t')
 
-    plt.suptitle("RK4 Local Truncation Error Estimates", fontsize=16)
-    plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
+        # Only show legend on first subplot to reduce clutter
+        if i == 0:
+            ax.legend(fontsize=8)
+
+    plt.suptitle(f"RK4 Errors: {title}")
+    plt.tight_layout(rect=[0, 0, 1, 0.93])  # leave space for suptitle
     plt.show()
     
 
-def rk4_relative_error_heatmap(f, y_exact_func, t0, y0, tf, h_values, n_t_points=200, reference_h=None):
+def rk4_relative_error_heatmap(f, y_exact_func, t0, y0, tf, h_values, n_t_points=200, reference_h=None, title=""):
     """
     Generate a dense heatmap of relative error vs t and h for RK4.
 
@@ -175,11 +153,11 @@ def rk4_relative_error_heatmap(f, y_exact_func, t0, y0, tf, h_values, n_t_points
     plt.xlabel('t')
     plt.ylabel('Step size h')
     plt.yscale('log')  # step sizes often logarithmic
-    plt.title('RK4 Relative Error Heatmap')
+    plt.title(f'RK4 Relative Error Heatmap: {title}')
     plt.show()
 
 
-def plot_loglog_error_with_slope(f, y_exact_func, t0, y0, tf, h_values):
+def plot_loglog_error_with_slope(f, y_exact_func, t0, y0, tf, h_values, title=""):
     global_errors = []
     local_errors = []
 
@@ -227,7 +205,7 @@ def plot_loglog_error_with_slope(f, y_exact_func, t0, y0, tf, h_values):
 
     plt.xlabel('Step size h')
     plt.ylabel('Error at t = 4')
-    plt.title('Error Regimes for RK4')
+    plt.title(f'Error Regimes for RK4: {title}')
     plt.grid(True, which='both')
     plt.legend()
     plt.show()

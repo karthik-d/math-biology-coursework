@@ -12,23 +12,47 @@ from analysis.descent import rosenbrock_functions, f1_shifted_quadratic, f2_mixe
 if __name__=='__main__':
 
 	## 1A. GIVEN FUNCTIION TESTS
-	f = lambda t, y: y - t**2 + 1
-	y_exact = lambda t: (t + 1)**2 - 0.5*np.exp(t)
-	t0, y0, tf = 0.0, 0.5, 4.0
-	h_values = [0.2, 0.1, 0.05, 0.025, 0.0125]
+	# f = lambda t, y: y - t**2 + 1
+	# y_exact = lambda t: (t + 1)**2 - 0.5*np.exp(t)
+	# t0, y0, tf = 0.0, 0.5, 4.0
+	# h_values = [0.2, 0.1, 0.05, 0.025, 0.0125]
 	# rk4_utils.plot_rk4_solutions(f, y_exact, t0, y0, tf, h_values)
-	# rk4_utils.plot_rk4_relative_error(f, y_exact, t0, y0, tf, h_values)
-	# rk4_utils.plot_rk4_local_error(f, y_exact, t0, y0, tf, h_values)
+	# rk4_utils.plot_rk4_local_and_global_error(f, y_exact, t0, y0, tf, h_values)
 
-	# h_values = np.logspace(0, -4, 500)
-	# rk4_utils.rk4_relative_error_heatmap(f, y_exact, t0, y0, tf, h_values)
+	# # h_values = np.logspace(0, -4, 500)
+	# # rk4_utils.rk4_relative_error_heatmap(f, y_exact, t0, y0, tf, h_values)
 
+	# h_values = np.logspace(-4, 0, 100)
+	# local_errors, global_errors = rk4_utils.plot_loglog_error_with_slope(f, y_exact, t0, y0, tf, h_values)
+	# rk4_utils.plot_piecewise_order(h_values, local_errors, global_errors)
 
 	## 1B. OTHER FUNCTION TESTS
+
+	# ---------------- Quadratic growth ----------------
+	f1 = lambda t, y: np.cos(t)
+	y_exact1 = lambda t: np.sin(t)
+	t0_1, y0_1, tf_1 = 0.0, 0.0, 8.0
+	h_values = [0.2, 0.1, 0.05, 0.025, 0.0125]
+
+	# Plot RK4 solutions and errors for quadratic growth
+	rk4_utils.plot_rk4_solutions(f1, y_exact1, t0_1, y0_1, tf_1, h_values, title="Sinusoidal")
+	rk4_utils.plot_rk4_local_and_global_error(f1, y_exact1, t0_1, y0_1, tf_1, h_values, title="Sinusoidal")
 	h_values = np.logspace(-4, 0, 100)
-	local_errors, global_errors = rk4_utils.plot_loglog_error_with_slope(f, y_exact, t0, y0, tf, h_values)
-	rk4_utils.plot_piecewise_order(h_values, local_errors, global_errors)
+	local_errors, global_errors = rk4_utils.plot_loglog_error_with_slope(f1, y_exact1, t0_1, y0_1, tf_1, h_values, title="Sinusoidal")
+
+	# ---------------- Exponential decay ----------------
+	f2 = lambda t, y: -2*y
+	y_exact2 = lambda t: np.exp(-2*t)
+	t0_2, y0_2, tf_2 = 0.0, 1.0, 2.0
+	h_values = [0.2, 0.1, 0.05, 0.025, 0.0125]
+
+	# Plot RK4 solutions and errors for exponential decay
+	rk4_utils.plot_rk4_solutions(f2, y_exact2, t0_2, y0_2, tf_2, h_values, title="Exponential Decay")
+	rk4_utils.plot_rk4_local_and_global_error(f2, y_exact2, t0_2, y0_2, tf_2, h_values, title="Exponential Decay")
+	h_values = np.logspace(-4, 0, 100)
+	local_errors, global_errors = rk4_utils.plot_loglog_error_with_slope(f2, y_exact2, t0_2, y0_2, tf_2, h_values, title="Exponential Decay")
 	
+
 	# 2. SYSTEMATIC TEST: RK4.
 	# convergence analysis
 	# h_vals, errors, p_vals = run_order_analysis_clean(f, y, params)
