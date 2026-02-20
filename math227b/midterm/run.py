@@ -25,10 +25,9 @@ if __name__=='__main__':
 
 
 	## 1B. OTHER FUNCTION TESTS
-	h_values = np.logspace(-5, 0, 100)
+	h_values = np.logspace(-4, 0, 100)
 	local_errors, global_errors = rk4_utils.plot_loglog_error_with_slope(f, y_exact, t0, y0, tf, h_values)
 	rk4_utils.plot_piecewise_order(h_values, local_errors, global_errors)
-	# rk4_utils.plot_roundoff_vs_truncation(f, y_exact, t0, y0, tf)
 	
 	# 2. SYSTEMATIC TEST: RK4.
 	# convergence analysis

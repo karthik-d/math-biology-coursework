@@ -180,96 +180,100 @@ def rk4_relative_error_heatmap(f, y_exact_func, t0, y0, tf, h_values, n_t_points
 
 
 def plot_loglog_error_with_slope(f, y_exact_func, t0, y0, tf, h_values):
-	global_errors = []
-	local_errors = []
+    global_errors = []
+    local_errors = []
 
-	for h in h_values:
-		t_num, y_num = rk4_solver(f, t0, y0, h, tf)
-		y_tf = y_exact_func(tf)
-		global_errors.append(abs(y_num[-1] - y_tf))
-		# LTE.
-		t_prev = tf - h
-		y_exact_prev = y_exact_func(t_prev)
-		# one RK4 step from exact value
-		t_step, y_step = rk4_solver(f, t_prev, y_exact_prev, h, tf)
-		y_exact_tf = y_exact_func(tf)
-		local_errors.append(abs(y_step[-1] - y_exact_tf))
-			
-	global_errors = np.array(global_errors)
-	local_errors = np.array(local_errors)
+    for h in h_values:
+        # Global error at tf
+        t_num, y_num = rk4_solver(f, t0, y0, h, tf)
+        y_tf = y_exact_func(tf)
+        global_errors.append(abs(y_num[-1] - y_tf))
 
-	# Reference slope h^4 (scaled to match first data point)
-	C = global_errors[-1] / h_values[-1]**5
-	ref_line_4 = C * h_values**5
-	C = local_errors[-1] / h_values[-1]**4
-	ref_line_5 = C * h_values**4
+        # True local truncation error: one step from exact data
+        t_prev = tf - h
+        y_exact_prev = y_exact_func(t_prev)
+        t_step, y_step = rk4_solver(f, t_prev, y_exact_prev, h, tf)
+        y_exact_tf = y_exact_func(tf)
+        local_errors.append(abs(y_step[-1] - y_exact_tf))
 
-	plt.figure(figsize=(6,5))
-	plt.loglog(h_values, global_errors, 'gs-', label='global error', alpha=0.7, markersize=2)
-	plt.loglog(h_values, local_errors, 'bo-', label='local error', alpha=0.7, markersize=2)
-	plt.loglog(h_values, ref_line_5, 'g--', label=r'Reference $\propto h^4$')
-	plt.loglog(h_values, ref_line_4, 'b--', label=r'Reference $\propto h^4$')
-	plt.xlabel('Step size h')
-	plt.ylabel('Error at t = 4')
-	plt.title('Global Error vs Step Size (RK4)')
-	plt.grid(True, which='both')
-	plt.legend()
-	plt.show()
+    global_errors = np.array(global_errors)
+    local_errors = np.array(local_errors)
 
-	return local_errors, global_errors
+    # Reference lines (correct orders)
+    Cg = global_errors[len(global_errors)//2] / h_values[len(h_values)//2]**4
+    Cl = local_errors[len(local_errors)//2] / h_values[len(h_values)//2]**5
+    ref_global = Cg * h_values**4
+    ref_local  = Cl * h_values**5
+
+    # Detect asymptotic region via slope ~4
+    slopes = np.diff(np.log(global_errors)) / np.diff(np.log(h_values))
+    idx_asymp = np.where((slopes > 3.95) & (slopes < 4.05))[0]
+
+    plt.figure(figsize=(7,6))
+
+    plt.loglog(h_values, global_errors, 'gs-', label='Global error', markersize=3)
+    plt.loglog(h_values, local_errors, 'bo-', label='Local truncation error', markersize=3)
+
+    plt.loglog(h_values, ref_global, 'g--', label=r'Ref $\propto h^4$')
+    plt.loglog(h_values, ref_local,  'b--', label=r'Ref $\propto h^5$')
+
+    # Shade regimes
+    if len(idx_asymp) > 0:
+        h_left = h_values[idx_asymp[0]]
+        h_right = h_values[idx_asymp[-1]+1]
+        plt.axvspan(h_left, h_right, color='green', alpha=0.1, label='Asymptotic')
+        plt.axvspan(h_values[0], h_left, color='red', alpha=0.1, label='Round-off dominated')
+        plt.axvspan(h_right, h_values[-1], color='orange', alpha=0.1, label='Pre-asymptotic')
+
+    plt.xlabel('Step size h')
+    plt.ylabel('Error at t = 4')
+    plt.title('Error Regimes for RK4')
+    plt.grid(True, which='both')
+    plt.legend()
+    plt.show()
+
+    return local_errors, global_errors
 
 
 def plot_piecewise_order(h_values, local_errors, global_errors):
     p_values_local = []
+    p_values_global = []
 
     for i in range(len(h_values)-1):
         p = np.log(local_errors[i] / local_errors[i+1]) / np.log(h_values[i] / h_values[i+1])
         p_values_local.append(p)
+
         p = np.log(global_errors[i] / global_errors[i+1]) / np.log(h_values[i] / h_values[i+1])
         p_values_global.append(p)
 
     p_values_local = np.array(p_values_local)
     p_values_global = np.array(p_values_global)
 
-    plt.figure(figsize=(6,4))
-    plt.semilogx(h_values, p_values_local, 'bs-', label='local error', alpha=0.7, markersize=2)
-    plt.semilogx(h_values, p_values_global, 'go-', label='global error', alpha=0.7, markersize=2)
-    plt.axhline(4, color='b', linestyle='--', label='order = 4')
-    plt.axhline(5, color='g', linestyle='--', label='order = 5')
+    # Detect asymptotic region using global error order ≈ 4
+    idx_asymp = np.where((p_values_global > 3.8) & (p_values_global < 4.2))[0]
+
+    plt.figure(figsize=(7,5))
+    plt.semilogx(h_values[:-1], p_values_local, 'bs-', label='Local error order', alpha=0.6, markersize=3)
+    plt.semilogx(h_values[:-1], p_values_global, 'go-', label='Global error order', alpha=0.6, markersize=3)
+
+    plt.axhline(4, color='g', linestyle='--', label='Global order = 4')
+    plt.axhline(5, color='b', linestyle='--', label='Local order = 5')
+
+    # Shade regimes
+    if len(idx_asymp) > 0:
+        h_left = h_values[idx_asymp[0]]
+        h_right = h_values[idx_asymp[-1] + 1]
+
+        plt.axvspan(h_values[0], h_left, color='red', alpha=0.12,
+                    label='Round-off dominated')
+        plt.axvspan(h_left, h_right, color='green', alpha=0.12,
+                    label='Asymptotic (truncation-dominated)')
+        plt.axvspan(h_right, h_values[-1], color='orange', alpha=0.12,
+                    label='Pre-asymptotic (coarse h)')
+
     plt.xlabel('Step size h')
     plt.ylabel('Estimated order')
     plt.title('Piecewise Convergence Order (RK4)')
-    plt.grid(True)
-    plt.legend()
-    plt.show()
-
-    return p_values
-
-
-def plot_roundoff_vs_truncation(f, y_exact_func, t0, y0, tf):
-    h_values = np.logspace(-8, -1, 40)
-    errors = []
-
-    for h in h_values:
-        t_num, y_num = rk4_solver(f, t0, y0, h, tf)
-        y_tf = y_exact_func(tf)
-        errors.append(abs(y_num[-1] - y_tf))
-
-    errors = np.array(errors)
-
-    plt.figure(figsize=(6,5))
-    plt.loglog(h_values, errors, 'o-', label='RK4 error')
-
-    # Reference slope h^4 (scaled in mid-range)
-    mid = len(h_values)//2
-    C = errors[mid] / h_values[mid]**4
-    plt.loglog(h_values, C*h_values**4, 'k--', label=r'Reference $\propto h^4$')
-
-    plt.xlabel('Step size h')
-    plt.ylabel('Error at t = tf')
-    plt.title('Roundoff vs Truncation Error Regimes')
     plt.grid(True, which='both')
     plt.legend()
     plt.show()
-
-    return h_values, errors
