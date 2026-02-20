@@ -62,37 +62,41 @@ if __name__=='__main__':
 
 
 	## PRE-TEST 1: Other test functions.
-	# f, grad = f1_shifted_quadratic()
-	# x_star = np.array([1.0, -2.0])
-	# x0 = np.array([3.0, 1.0])
-	# xmin, path = steepest_descent(f, grad, x0)
-	# descent_utils.plot_iterations_summary(path, grad, x_star, title="Shifted Quadratic: Iteration Summary")
-	# descent_utils.plot_trajectory_contour(f, path, xlim=(0,4), ylim=(-4,2), title="Shifted Quadratic: Trajectory over contour")
+	f, grad = f1_shifted_quadratic()
+	x_star = np.array([1.0, -2.0])
+	x0 = np.array([3.0, 1.0])
+	xmin, path = steepest_descent(f, grad, x0)
+	descent_utils.plot_iterations_summary(path, grad, x_star, title="Shifted Quadratic: Iteration Summary")
+	descent_utils.plot_trajectory_contour(f, path, xlim=(0,4), ylim=(-4,2), title="Shifted Quadratic: Trajectory over contour")
 
-	# f, grad = f2_mixed_poly_exp()
-	# x_star = np.array([0.0, 0.0])
-	# x0 = np.array([0.2, 1.0])
-	# xmin, path = steepest_descent(f, grad, x0)
-	# descent_utils.plot_iterations_summary(path, grad, x_star, title="Mixed Exponential: Iteration Summary")
-	# descent_utils.plot_trajectory_contour(f, path, xlim=(-0.3,0.3), ylim=(-0.5,1.2), title="Mixed Exponential: Trajectory over contour")
+	f, grad = f2_mixed_poly_exp()
+	x_star = np.array([0.0, 0.0])
+	x0 = np.array([0.2, 1.0])
+	xmin, path = steepest_descent(f, grad, x0)
+	descent_utils.plot_iterations_summary(path, grad, x_star, title="Mixed Exponential: Iteration Summary")
+	descent_utils.plot_trajectory_contour(f, path, xlim=(-0.3,0.3), ylim=(-0.5,1.2), title="Mixed Exponential: Trajectory over contour")
 
 
 	## MAIN TEST: ROSENBROCK.
 	f, grad, hess = rosenbrock_functions()
-	descent_utils.plot_basin(
-		f, grad,
-		x_range=(-9, 11),
-		y_range=(-49, 51),
-		grid_size=20
-	)
+	# descent_utils.plot_basin(
+	# 	f, grad,
+	# 	x_range=(-9, 11),
+	# 	y_range=(-49, 51),
+	# 	grid_size=20
+	# )
+	# x_star = np.array([1, 1])
+	# # starting pt. 1
+	# x0 = np.array([1.2, 1.2])
+	# xmin, path = steepest_descent(f, grad, x0)
+	# descent_utils.plot_iterations_summary(path, grad, x_star, title="Rosenbrock from (1.2, 1.2): Iteration Summary")
+	# descent_utils.plot_trajectory_contour(f, path, xlim=(0.75, 1.25), ylim=(0.75, 1.25), title="Rosenbrock from (1.2, 1.2): Trajectory over contour")
+	# # starting pt. 2
+	# x0 = np.array([-1.2, 1])
+	# xmin, path = steepest_descent(f, grad, x0)
+	# descent_utils.plot_iterations_summary(path, grad, x_star, title="Rosenbrock from (-1.2, 1): Iteration Summary")
+	# descent_utils.plot_trajectory_contour(f, path, xlim=(-1.5, 1.25), ylim=(0.75, 1.25), title="Rosenbrock from (-1.2, 1): Trajectory over contour")
 
-	# show the converging points.
-	# plot error against iteraitons?
-	# viz. positive semi-definite somehow.
-
-	# Multiple initial conditions (basin of attraction)
-	# Step size vs iteration
-	# Function value vs iteration
 
 
 

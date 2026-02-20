@@ -25,7 +25,7 @@ def plot_iterations_summary(path, grad, x_star, title="Iteration Summary"):
 	title : str
 		Figure title
 	"""
-	path = np.array(path)
+	path = np.array(path[::10])
 	iterations = np.arange(len(path))
 
 	# Step length (norm of move)
@@ -40,7 +40,7 @@ def plot_iterations_summary(path, grad, x_star, title="Iteration Summary"):
 
 	plt.figure(figsize=(8,6))
 
-	plt.plot(iterations, step_lengths, marker='o', color='tab:blue', label=r'Step length $||x_{k+1}-x_k||$', alpha=0.7)
+	plt.plot(iterations, step_lengths, marker='.', color='tab:blue', label=r'Step length $||x_{k+1}-x_k||$', alpha=0.7)
 	plt.plot(iterations, grad_norms, marker='s', color='tab:orange', label=r'Gradient norm $||grad f(x_k)||$', alpha=0.7)
 	plt.plot(iterations, dists, marker='^', color='tab:green', label='Distance to x*', alpha=0.7)
 
@@ -69,7 +69,7 @@ def plot_trajectory_contour(f, path, xlim=(-1,5), ylim=(-3,3), title="Trajectory
 
     plt.figure()
     plt.contour(X, Y, Z, levels=50, cmap='viridis')
-    plt.plot(path[:,0], path[:,1], marker='o', color='r', label="Iterations", alpha=0.4)
+    plt.plot(path[:,0], path[:,1], marker='o', color='r', label="Iterations", alpha=0.4, markersize=1)
     plt.scatter(path[0,0], path[0,1], color='blue', marker='s', label="Start", s=50, zorder=5)
     plt.scatter(path[-1,0], path[-1,1], color='green', marker='*', label="End", s=50, zorder=5)
     plt.xlabel("x")
