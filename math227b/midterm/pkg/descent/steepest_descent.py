@@ -20,8 +20,6 @@ def steepest_descent(f, grad, x0, tol=1e-6, maxiter=int(1e7)):
 		norm_g = np.linalg.norm(g)
 
 		if norm_g < tol:
-			print(f"Converged in {k} iterations.")
-			print(x)
 			return x, np.array(history)
 
 		p = -g  # steepest descent direction
@@ -29,5 +27,5 @@ def steepest_descent(f, grad, x0, tol=1e-6, maxiter=int(1e7)):
 		x = x + alpha*p
 		history.append(x.copy())
 
-	print("Maximum iterations reached.")
+	# print("Maximum iterations reached.")
 	return x, np.array(history)

@@ -6,7 +6,7 @@ from pkg.rk4.rk4 import rk4_solver
 from pkg.rk4.utils import plot_solutions
 
 from analysis.rk4 import test_function, run_order_analysis_clean, run_order_analysis_regions
-from analysis.descent import rosenbrock_functions, f1_shifted_quadratic, f2_rotated_quadratic
+from analysis.descent import rosenbrock_functions, f1_shifted_quadratic, f2_mixed_poly_exp
 
 
 if __name__=='__main__':
@@ -69,13 +69,22 @@ if __name__=='__main__':
 	# descent_utils.plot_iterations_summary(path, grad, x_star, title="Shifted Quadratic: Iteration Summary")
 	# descent_utils.plot_trajectory_contour(f, path, xlim=(0,4), ylim=(-4,2), title="Shifted Quadratic: Trajectory over contour")
 
-	# f, grad = f2_rotated_quadratic()
+	# f, grad = f2_mixed_poly_exp()
 	# x_star = np.array([0.0, 0.0])
 	# x0 = np.array([0.2, 1.0])
 	# xmin, path = steepest_descent(f, grad, x0)
 	# descent_utils.plot_iterations_summary(path, grad, x_star, title="Mixed Exponential: Iteration Summary")
 	# descent_utils.plot_trajectory_contour(f, path, xlim=(-0.3,0.3), ylim=(-0.5,1.2), title="Mixed Exponential: Trajectory over contour")
 
+
+	## MAIN TEST: ROSENBROCK.
+	f, grad, hess = rosenbrock_functions()
+	descent_utils.plot_basin(
+		f, grad,
+		x_range=(-9, 11),
+		y_range=(-49, 51),
+		grid_size=20
+	)
 
 	# show the converging points.
 	# plot error against iteraitons?
@@ -84,7 +93,6 @@ if __name__=='__main__':
 	# Multiple initial conditions (basin of attraction)
 	# Step size vs iteration
 	# Function value vs iteration
-	# Contour plot + path (instead of raw heatmap)
 
 
 
