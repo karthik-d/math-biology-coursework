@@ -57,21 +57,62 @@ def plot_iterations_summary(path, grad, x_star, title="Iteration Summary"):
 # ------------------------------------------------
 # 2. 2D contour with trajectory overlay
 # ------------------------------------------------
-def plot_trajectory_contour(f, path, xlim=(-1,5), ylim=(-3,3), title="Trajectory over contour"):
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def plot_trajectory_contour(f, grad, path, xlim=(-1,5), ylim=(-3,3), title="Trajectory over contour"):
+    """
+    Plots trajectory of steepest descent over function contours with a heat map
+    of gradient magnitudes underneath.
+
+    Parameters
+    ----------
+    f : function
+        Scalar function f(x)
+    grad : function
+        Gradient function grad(x)
+    path : array-like
+        Array of iterates (num_iter, 2)
+    xlim : tuple
+        Limits for x-axis
+    ylim : tuple
+        Limits for y-axis
+    title : str
+        Plot title
+    """
     path = np.array(path)
     x = np.linspace(xlim[0], xlim[1], 200)
     y = np.linspace(ylim[0], ylim[1], 200)
     X, Y = np.meshgrid(x, y)
-    Z = np.zeros_like(X)
+
+    Z = np.zeros_like(X)          # Function values for contours
+    grad_norm = np.zeros_like(X)  # Gradient magnitudes for heat map
+
+    # Compute function value and gradient magnitude at each grid point
     for i in range(X.shape[0]):
         for j in range(X.shape[1]):
-            Z[i,j] = f([X[i,j], Y[i,j]])
+            pt = [X[i,j], Y[i,j]]
+            Z[i,j] = f(pt)
+            grad_val = grad(pt)
+            grad_norm[i,j] = np.linalg.norm(grad_val)
 
-    plt.figure()
-    plt.contour(X, Y, Z, levels=50, cmap='viridis')
-    plt.plot(path[:,0], path[:,1], marker='o', color='r', label="Iterations", alpha=0.4, markersize=1)
+    plt.figure(figsize=(8,6))
+
+    # Heat map of gradient magnitudes
+    plt.imshow(grad_norm, extent=(xlim[0], xlim[1], ylim[0], ylim[1]),
+               origin='lower', alpha=0.6, cmap='coolwarm', aspect='auto')
+    cbar = plt.colorbar()
+    cbar.set_label("Gradient magnitude ||∇f||")
+
+    # Contour lines of function
+    CS = plt.contour(X, Y, Z, levels=50, colors='k', alpha=0.5)
+
+    # Plot trajectory
+    plt.plot(path[:,0], path[:,1], marker='o', color='r', label="Iterations", alpha=0.6, markersize=2)
     plt.scatter(path[0,0], path[0,1], color='blue', marker='s', label="Start", s=50, zorder=5)
     plt.scatter(path[-1,0], path[-1,1], color='green', marker='*', label="End", s=50, zorder=5)
+
     plt.xlabel("x")
     plt.ylabel("y")
     plt.title(title)
