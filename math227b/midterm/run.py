@@ -1,7 +1,7 @@
 import numpy as np
 
 from pkg.descent.steepest_descent import steepest_descent
-from pkg.descent.utils import check_hessian_pd
+from pkg.descent import utils as descent_utils
 from pkg.rk4.rk4 import rk4_solver
 from pkg.rk4.utils import plot_solutions
 
@@ -33,10 +33,10 @@ if __name__=='__main__':
 	
 	## 2. SYSTEMATIC TEST: RK4.
 	# convergence analysis
-	h_vals, errors, p_vals = run_order_analysis_clean(f, y, params)
+	# h_vals, errors, p_vals = run_order_analysis_clean(f, y, params)
 
-	# Region analysis
-	h_vals2, errors2, p_vals2, good_region = run_order_analysis_regions(f, y, params)
+	# # Region analysis
+	# h_vals2, errors2, p_vals2, good_region = run_order_analysis_regions(f, y, params)
 
 	
 	## 3. BASIC TEST: STEEPEST DESCENT.
@@ -59,13 +59,33 @@ if __name__=='__main__':
 	# 	print("Computed minimizer:", xmin)
 	# 	print("Function value:", f(xmin))
 	# 	print("Gradient norm:", np.linalg.norm(grad(xmin)))
+	
+	def f(x): 
+		return (x[0] - 1)**2 + 5*(x[1] + 2)**2
+
+	def grad(x):
+		return np.array([2*(x[0] - 1), 10*(x[1] + 2)])
+
+	x_star = np.array([1.0, -2.0])
+	x0 = np.array([3.0, 1.0])
+
+	# Run steepest descent
+	xmin, path = steepest_descent(f, grad, x0)
+
+	print("Computed minimizer:", xmin)
+	print("Function value:", f(xmin))
+	print("Distance to true minimizer:", np.linalg.norm(xmin - x_star))
+
+	# Generate plots
+	descent_utils.plot_step_length(path, title="Shifted Quadratic: Step length vs iteration")
+	descent_utils.plot_grad_norm_vs_iter(path, grad, title="Shifted Quadratic: Gradient norm vs iteration")
+	descent_utils.plot_dist_to_min(path, x_star, title="Shifted Quadratic: Distance to minimizer")
+	descent_utils.plot_trajectory_contour(f, path, xlim=(0,4), ylim=(-4,2), title="Shifted Quadratic: Trajectory over contour")
 
 
 	# show the converging points.
 	# plot error against iteraitons?
 	# viz. positive semi-definite somehow.
-
-
 
 	# Multiple initial conditions (basin of attraction)
 	# Step size vs iteration
