@@ -8,52 +8,48 @@ def check_hessian_pd(hess, x):
     return H, eigvals
 
 
-# ------------------------------------------------
-# 1. Step length vs iteration
-# ------------------------------------------------
-def plot_step_length(path, title="Step length vs iteration"):
-    path = np.array(path)
-    # Approximate step length: norm of move
-    step_lengths = np.linalg.norm(np.diff(path, axis=0), axis=1)
-    plt.figure()
-    plt.plot(np.arange(1, len(path)), step_lengths, marker='o')
-    plt.xlabel("Iteration")
-    plt.ylabel("Step length (||x_{k+1}-x_k||)")
-    plt.title(title)
-    plt.grid(True)
-    plt.show()
+def plot_iterations_summary(path, grad, x_star, title="Iteration Summary"):
+	"""
+	Plots step length, gradient norm, and distance to minimizer in one figure.
 
+	Parameters:
+	-----------
+	path : array-like
+		Array of iterates, shape (num_iter, n)
+	grad : function
+		Gradient function, grad(x)
+	x_star : array-like
+		True minimizer
+	title : str
+		Figure title
+	"""
+	path = np.array(path)
+	iterations = np.arange(len(path))
 
-# ------------------------------------------------
-# 2. Gradient norm vs iteration
-# ------------------------------------------------
-def plot_grad_norm_vs_iter(path, grad, title="Gradient norm vs iteration"):
-    path = np.array(path)
-    grad_norms = [np.linalg.norm(grad(x)) for x in path]
-    plt.figure()
-    plt.plot(np.arange(len(path)), grad_norms, marker='o')
-    plt.xlabel("Iteration")
-    plt.ylabel("||grad f(x_k)||")
-    plt.title(title)
-    plt.yscale('log')
-    plt.grid(True)
-    plt.show()
+	# Step length (norm of move)
+	step_lengths = np.linalg.norm(np.diff(path, axis=0), axis=1)
+	step_lengths = np.insert(step_lengths, 0, 0)  # insert 0 for first iteration
 
+	# Gradient norms
+	grad_norms = [np.linalg.norm(grad(x)) for x in path]
 
-# ------------------------------------------------
-# 3. Distance to minimizer vs iteration
-# ------------------------------------------------
-def plot_dist_to_min(path, x_star, title="Distance to minimizer vs iteration"):
-    path = np.array(path)
-    dists = [np.linalg.norm(x - x_star) for x in path]
-    plt.figure()
-    plt.plot(np.arange(len(path)), dists, marker='o')
-    plt.xlabel("Iteration")
-    plt.ylabel("||x_k - x*||")
-    plt.title(title)
-    plt.yscale('log')
-    plt.grid(True)
-    plt.show()
+	# Distance to minimizer
+	dists = [np.linalg.norm(x - x_star) for x in path]
+
+	plt.figure(figsize=(8,6))
+
+	plt.plot(iterations, step_lengths, marker='o', color='tab:blue', label=r'Step length $||x_{k+1}-x_k||$', alpha=0.7)
+	plt.plot(iterations, grad_norms, marker='s', color='tab:orange', label=r'Gradient norm $||grad f(x_k)||$', alpha=0.7)
+	plt.plot(iterations, dists, marker='^', color='tab:green', label='Distance to x*', alpha=0.7)
+
+	plt.xlabel("Iteration")
+	plt.ylabel("Value (log scale)")
+	plt.yscale('log')
+	plt.title(title)
+	plt.grid(True, which="both", ls="--", lw=0.5)
+	plt.legend()
+	plt.tight_layout()
+	plt.show()
 
 
 # ------------------------------------------------
@@ -71,9 +67,9 @@ def plot_trajectory_contour(f, path, xlim=(-1,5), ylim=(-3,3), title="Trajectory
 
     plt.figure()
     plt.contour(X, Y, Z, levels=50, cmap='viridis')
-    plt.plot(path[:,0], path[:,1], marker='o', color='r', label="Iterates")
-    plt.scatter(path[0,0], path[0,1], color='blue', marker='s', label="Start")
-    plt.scatter(path[-1,0], path[-1,1], color='green', marker='*', label="End")
+    plt.plot(path[:,0], path[:,1], marker='o', color='r', label="Iterations", alpha=0.4)
+    plt.scatter(path[0,0], path[0,1], color='blue', marker='s', label="Start", s=50, zorder=5)
+    plt.scatter(path[-1,0], path[-1,1], color='green', marker='*', label="End", s=50, zorder=5)
     plt.xlabel("x")
     plt.ylabel("y")
     plt.title(title)

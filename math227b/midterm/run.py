@@ -59,7 +59,7 @@ if __name__=='__main__':
 	# 	print("Computed minimizer:", xmin)
 	# 	print("Function value:", f(xmin))
 	# 	print("Gradient norm:", np.linalg.norm(grad(xmin)))
-	
+
 	def f(x): 
 		return (x[0] - 1)**2 + 5*(x[1] + 2)**2
 
@@ -77,9 +77,7 @@ if __name__=='__main__':
 	print("Distance to true minimizer:", np.linalg.norm(xmin - x_star))
 
 	# Generate plots
-	descent_utils.plot_step_length(path, title="Shifted Quadratic: Step length vs iteration")
-	descent_utils.plot_grad_norm_vs_iter(path, grad, title="Shifted Quadratic: Gradient norm vs iteration")
-	descent_utils.plot_dist_to_min(path, x_star, title="Shifted Quadratic: Distance to minimizer")
+	descent_utils.plot_iterations_summary(path, grad, x_star, title="Shifted Quadratic: Iteration Summary")
 	descent_utils.plot_trajectory_contour(f, path, xlim=(0,4), ylim=(-4,2), title="Shifted Quadratic: Trajectory over contour")
 
 
