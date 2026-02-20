@@ -12,3 +12,9 @@
 - _Lagrange_ and _Cubic Spline_ methods to interpolate functions from noise-free nodes: data fitting.
 - [Docs](./math227b/hw02/docs)
 - [Code](./math227b/hw02)
+
+#### 3. Newton-Raphson root solving
+
+- Implementation and tests of the Newton-Raphson method on a simple, biologically inspired 2D ODE system to numerically solve for steady state(s).
+- [Docs](./math227b/hw03/docs)
+- [Code](./math227b/hw03)
