@@ -33,10 +33,10 @@ if __name__=='__main__':
 	f = lambda t, y: y - t**2 + 1
 	y_exact = lambda t: (t + 1)**2 - 0.5*np.exp(t)
 	t0, y0, tf = 0.0, 0.5, 4.0
-	# h_values = [0.2, 0.1, 0.05, 0.025, 0.0125]
-	# rk4_utils.plot_rk4_solutions(f, y_exact, t0, y0, tf, h_values)
-	# rk4_utils.plot_rk4_relative_error(f, y_exact, t0, y0, tf, h_values)
-	# rk4_utils.plot_rk4_local_error(f, y_exact, t0, y0, tf, h_values)
+	h_values = [0.2, 0.1, 0.05, 0.025, 0.0125]
+	rk4_utils.plot_rk4_solutions(f, y_exact, t0, y0, tf, h_values)
+	rk4_utils.plot_rk4_relative_error(f, y_exact, t0, y0, tf, h_values)
+	rk4_utils.plot_rk4_local_error(f, y_exact, t0, y0, tf, h_values)
 
 	h_values = np.logspace(0, -4, 500)
 	rk4_utils.rk4_relative_error_heatmap(f, y_exact, t0, y0, tf, h_values)

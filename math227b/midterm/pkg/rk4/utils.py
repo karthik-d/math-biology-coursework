@@ -69,39 +69,69 @@ def plot_rk4_relative_error(f, y_exact_func, t0, y0, tf, h_values, reference_h=N
 		plt.ylabel('Relative Error')
 		plt.title(f'h={h}')
 		plt.grid(True)
+            
+		if i == 0:
+			plt.gca().set_ylabel('Relative Error')
+		else:
+			plt.gca().set_yticklabels([])
 
 	plt.suptitle("Relative Error")
 	plt.tight_layout()
 	plt.show()
 
-
 def plot_rk4_local_error(f, y_exact_func, t0, y0, tf, h_values, reference_h=None):
-	"""Plot estimated local truncation error per step for multiple step sizes."""
-	n_h = len(h_values)
+    """
+    Plot estimated local truncation error per step for multiple step sizes (RK4).
+    
+    Parameters
+    ----------
+    f : callable
+        RHS function f(t, y)
+    y_exact_func : callable
+        Exact solution y(t)
+    t0, y0, tf : float
+        Initial conditions
+    h_values : list or array
+        Step sizes to evaluate
+    reference_h : float, optional
+        Step size for reference solution if exact solution not available
+    """
+    n_h = len(h_values)
 
-	if y_exact_func is None and reference_h is not None:
-		t_ref, y_ref = rk4_solver(f, t0, y0, reference_h, tf)
-		y_exact_func = lambda t: np.interp(t, t_ref, y_ref)
+    # Reference solution if needed
+    if y_exact_func is None and reference_h is not None:
+        t_ref, y_ref = rk4_solver(f, t0, y0, reference_h, tf)
+        y_exact_func = lambda t: np.interp(t, t_ref, y_ref)
 
-	plt.figure(figsize=(20*n_h, 4))
+    # Dynamically scale figure width
+    fig_width = max(5 * n_h, 12)
+    plt.figure(figsize=(fig_width, 4))
 
-	for i, h in enumerate(h_values):
-		t_num, y_num = rk4_solver(f, t0, y0, h, tf)
-		t_half, y_half = rk4_solver(f, t0, y0, h/2, tf)
-		y_half_interp = np.interp(t_num, t_half, y_half)
-		
-		local_error_est = np.abs(y_num - y_half_interp) / (2**4 - 1)  # RK4 LTE estimate
-		
-		plt.subplot(1, n_h, i+1)
-		plt.plot(t_num, local_error_est, 'm-')
-		plt.xlabel('t')
-		plt.ylabel('LTE est')
-		plt.title(f'h={h}')
-		plt.grid(True)
+    for i, h in enumerate(h_values):
+        t_num, y_num = rk4_solver(f, t0, y0, h, tf)
+        t_half, y_half = rk4_solver(f, t0, y0, h/2, tf)
+        y_half_interp = np.interp(t_num, t_half, y_half)
 
-	plt.suptitle("Local Truncation Error")
-	plt.tight_layout()
-	plt.show()
+        # RK4 LTE estimate
+        local_error_est = np.abs(y_num - y_half_interp) / (2**4 - 1)
+
+        ax = plt.subplot(1, n_h, i+1)
+        ax.plot(t_num, local_error_est, 'm-')
+        ax.grid(True)
+        ax.set_title(f'h = {h}')
+
+        # Only show y-axis label on first subplot
+        if i == 0:
+            ax.set_ylabel('LTE estimate')
+        else:
+            ax.set_yticklabels([])
+
+        # Only show x-axis label on the bottom row / last subplot
+        ax.set_xlabel('t')
+
+    plt.suptitle("RK4 Local Truncation Error Estimates", fontsize=16)
+    plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
+    plt.show()
     
 
 def rk4_relative_error_heatmap(f, y_exact_func, t0, y0, tf, h_values, n_t_points=200, reference_h=None):
