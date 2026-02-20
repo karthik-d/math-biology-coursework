@@ -177,3 +177,99 @@ def rk4_relative_error_heatmap(f, y_exact_func, t0, y0, tf, h_values, n_t_points
     plt.yscale('log')  # step sizes often logarithmic
     plt.title('RK4 Relative Error Heatmap')
     plt.show()
+
+
+def plot_loglog_error_with_slope(f, y_exact_func, t0, y0, tf, h_values):
+	global_errors = []
+	local_errors = []
+
+	for h in h_values:
+		t_num, y_num = rk4_solver(f, t0, y0, h, tf)
+		y_tf = y_exact_func(tf)
+		global_errors.append(abs(y_num[-1] - y_tf))
+		# LTE.
+		t_prev = tf - h
+		y_exact_prev = y_exact_func(t_prev)
+		# one RK4 step from exact value
+		t_step, y_step = rk4_solver(f, t_prev, y_exact_prev, h, tf)
+		y_exact_tf = y_exact_func(tf)
+		local_errors.append(abs(y_step[-1] - y_exact_tf))
+			
+	global_errors = np.array(global_errors)
+	local_errors = np.array(local_errors)
+
+	# Reference slope h^4 (scaled to match first data point)
+	C = global_errors[-1] / h_values[-1]**5
+	ref_line_4 = C * h_values**5
+	C = local_errors[-1] / h_values[-1]**4
+	ref_line_5 = C * h_values**4
+
+	plt.figure(figsize=(6,5))
+	plt.loglog(h_values, global_errors, 'gs-', label='global error', alpha=0.7, markersize=2)
+	plt.loglog(h_values, local_errors, 'bo-', label='local error', alpha=0.7, markersize=2)
+	plt.loglog(h_values, ref_line_5, 'g--', label=r'Reference $\propto h^4$')
+	plt.loglog(h_values, ref_line_4, 'b--', label=r'Reference $\propto h^4$')
+	plt.xlabel('Step size h')
+	plt.ylabel('Error at t = 4')
+	plt.title('Global Error vs Step Size (RK4)')
+	plt.grid(True, which='both')
+	plt.legend()
+	plt.show()
+
+	return local_errors, global_errors
+
+
+def plot_piecewise_order(h_values, local_errors, global_errors):
+    p_values_local = []
+
+    for i in range(len(h_values)-1):
+        p = np.log(local_errors[i] / local_errors[i+1]) / np.log(h_values[i] / h_values[i+1])
+        p_values_local.append(p)
+        p = np.log(global_errors[i] / global_errors[i+1]) / np.log(h_values[i] / h_values[i+1])
+        p_values_global.append(p)
+
+    p_values_local = np.array(p_values_local)
+    p_values_global = np.array(p_values_global)
+
+    plt.figure(figsize=(6,4))
+    plt.semilogx(h_values, p_values_local, 'bs-', label='local error', alpha=0.7, markersize=2)
+    plt.semilogx(h_values, p_values_global, 'go-', label='global error', alpha=0.7, markersize=2)
+    plt.axhline(4, color='b', linestyle='--', label='order = 4')
+    plt.axhline(5, color='g', linestyle='--', label='order = 5')
+    plt.xlabel('Step size h')
+    plt.ylabel('Estimated order')
+    plt.title('Piecewise Convergence Order (RK4)')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+    return p_values
+
+
+def plot_roundoff_vs_truncation(f, y_exact_func, t0, y0, tf):
+    h_values = np.logspace(-8, -1, 40)
+    errors = []
+
+    for h in h_values:
+        t_num, y_num = rk4_solver(f, t0, y0, h, tf)
+        y_tf = y_exact_func(tf)
+        errors.append(abs(y_num[-1] - y_tf))
+
+    errors = np.array(errors)
+
+    plt.figure(figsize=(6,5))
+    plt.loglog(h_values, errors, 'o-', label='RK4 error')
+
+    # Reference slope h^4 (scaled in mid-range)
+    mid = len(h_values)//2
+    C = errors[mid] / h_values[mid]**4
+    plt.loglog(h_values, C*h_values**4, 'k--', label=r'Reference $\propto h^4$')
+
+    plt.xlabel('Step size h')
+    plt.ylabel('Error at t = tf')
+    plt.title('Roundoff vs Truncation Error Regimes')
+    plt.grid(True, which='both')
+    plt.legend()
+    plt.show()
+
+    return h_values, errors
