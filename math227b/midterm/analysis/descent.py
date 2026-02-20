@@ -28,3 +28,33 @@ def rosenbrock_functions():
                          [h12, h22]])
 
     return f, grad, hess
+
+
+def f1_shifted_quadratic():
+	"""
+	Returns:
+		f(x): scalar function
+		grad(x): gradient (2-vector)
+	"""
+
+	def f(x): 
+		return (x[0] - 1)**2 + 5*(x[1] + 2)**2
+
+	def grad(x):
+		return np.array([2*(x[0] - 1), 10*(x[1] + 2)])
+
+	return f, grad
+
+
+def f2_mixed_poly_exp():
+	"""
+	Returns:
+		f(x): scalar function
+		grad(x): gradient (2-vector)
+	"""
+
+	def f(x): return 100*x[0]**2 + x[1]**2
+	def grad(x): return np.array([200*x[0], 2*x[1]])
+
+	return f, grad
+

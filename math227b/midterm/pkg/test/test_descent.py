@@ -20,6 +20,7 @@ class TestSteepestDescent(unittest.TestCase):
 	# 1. Convex quadratic
 	# ------------------------
 	def test_shifted_quadratic(self):
+		print(1)
 		"""Convex quadratic with unique minimizer (shifted, anisotropic)"""
 
 		def f(x): 
@@ -37,6 +38,7 @@ class TestSteepestDescent(unittest.TestCase):
 	# 2. Ill-conditioned quadratic
 	# ------------------------
 	def test_ill_conditioned_quadratic(self):
+		print(2)
 		"""Tests zig-zag behavior"""
 
 		def f(x): return 100*x[0]**2 + x[1]**2
@@ -51,6 +53,7 @@ class TestSteepestDescent(unittest.TestCase):
 	# 3. Flat function (edge case)
 	# ------------------------
 	def test_flat_function(self):
+		print(3)
 		"""Gradient is zero everywhere"""
 
 		def f(x): return 1.0
@@ -68,6 +71,7 @@ class TestSteepestDescent(unittest.TestCase):
 	# 4. Linear function (no minimizer)
 	# ------------------------
 	def test_linear_function(self):
+		print(4)
 		"""Tests behavior when no minimum exists"""
 
 		def f(x): return x[0] + x[1]
@@ -84,6 +88,7 @@ class TestSteepestDescent(unittest.TestCase):
 	# 5. Exponential bowl
 	# ------------------------------------------------
 	def test_exponential_bowl(self):
+		print(5)
 		"""Tests rapidly varying gradient and line search stability"""
 
 		def f(x):
@@ -105,6 +110,7 @@ class TestSteepestDescent(unittest.TestCase):
     # 6. Quartic convex function
     # ------------------------------------------------
 	def test_quartic_convex(self):
+		print(6)
 		"""Tests nonlinear but convex objective"""
 
 		def f(x):
@@ -125,6 +131,7 @@ class TestSteepestDescent(unittest.TestCase):
     # 7. Rotated quadratic
     # ------------------------------------------------
 	def test_rotated_quadratic(self):
+		print(7)
 		"""Tests invariance under coordinate rotation"""
 
 		def f(x):
@@ -149,6 +156,7 @@ class TestSteepestDescent(unittest.TestCase):
     # 8. Mixed polynomial-exponential
     # ------------------------------------------------
 	def test_mixed_poly_exp(self):
+		print(8)
 		"""Tests mixed polynomial–exponential scaling"""
 
 		def f(x):
@@ -164,7 +172,6 @@ class TestSteepestDescent(unittest.TestCase):
 
 		self.assertConverges(f, grad, np.array([1.0, 1.0]), x_star)
 		self.assertConverges(f, grad, np.array([-1.0, 2.0]), x_star)
-
 
 
 if __name__ == "__main__":

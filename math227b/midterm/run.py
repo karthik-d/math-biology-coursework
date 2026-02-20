@@ -6,7 +6,7 @@ from pkg.rk4.rk4 import rk4_solver
 from pkg.rk4.utils import plot_solutions
 
 from analysis.rk4 import test_function, run_order_analysis_clean, run_order_analysis_regions
-from analysis.descent import rosenbrock_functions
+from analysis.descent import rosenbrock_functions, f1_shifted_quadratic, f2_rotated_quadratic
 
 
 if __name__=='__main__':
@@ -60,25 +60,21 @@ if __name__=='__main__':
 	# 	print("Function value:", f(xmin))
 	# 	print("Gradient norm:", np.linalg.norm(grad(xmin)))
 
-	def f(x): 
-		return (x[0] - 1)**2 + 5*(x[1] + 2)**2
 
-	def grad(x):
-		return np.array([2*(x[0] - 1), 10*(x[1] + 2)])
+	## PRE-TEST 1: Other test functions.
+	# f, grad = f1_shifted_quadratic()
+	# x_star = np.array([1.0, -2.0])
+	# x0 = np.array([3.0, 1.0])
+	# xmin, path = steepest_descent(f, grad, x0)
+	# descent_utils.plot_iterations_summary(path, grad, x_star, title="Shifted Quadratic: Iteration Summary")
+	# descent_utils.plot_trajectory_contour(f, path, xlim=(0,4), ylim=(-4,2), title="Shifted Quadratic: Trajectory over contour")
 
-	x_star = np.array([1.0, -2.0])
-	x0 = np.array([3.0, 1.0])
-
-	# Run steepest descent
-	xmin, path = steepest_descent(f, grad, x0)
-
-	print("Computed minimizer:", xmin)
-	print("Function value:", f(xmin))
-	print("Distance to true minimizer:", np.linalg.norm(xmin - x_star))
-
-	# Generate plots
-	descent_utils.plot_iterations_summary(path, grad, x_star, title="Shifted Quadratic: Iteration Summary")
-	descent_utils.plot_trajectory_contour(f, path, xlim=(0,4), ylim=(-4,2), title="Shifted Quadratic: Trajectory over contour")
+	# f, grad = f2_rotated_quadratic()
+	# x_star = np.array([0.0, 0.0])
+	# x0 = np.array([0.2, 1.0])
+	# xmin, path = steepest_descent(f, grad, x0)
+	# descent_utils.plot_iterations_summary(path, grad, x_star, title="Mixed Exponential: Iteration Summary")
+	# descent_utils.plot_trajectory_contour(f, path, xlim=(-0.3,0.3), ylim=(-0.5,1.2), title="Mixed Exponential: Trajectory over contour")
 
 
 	# show the converging points.

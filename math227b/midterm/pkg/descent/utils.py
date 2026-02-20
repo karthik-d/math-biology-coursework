@@ -53,7 +53,7 @@ def plot_iterations_summary(path, grad, x_star, title="Iteration Summary"):
 
 
 # ------------------------------------------------
-# 4. 2D contour with trajectory overlay
+# 2. 2D contour with trajectory overlay
 # ------------------------------------------------
 def plot_trajectory_contour(f, path, xlim=(-1,5), ylim=(-3,3), title="Trajectory over contour"):
     path = np.array(path)
