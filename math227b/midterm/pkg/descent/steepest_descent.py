@@ -30,5 +30,4 @@ def steepest_descent(f, grad, x0, tol=1e-6, maxiter=int(1e7)):
 		history.append(x.copy())
 
 	print("Maximum iterations reached.")
-	print(x)
 	return x, np.array(history)
