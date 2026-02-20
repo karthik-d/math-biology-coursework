@@ -34,11 +34,14 @@ if __name__=='__main__':
 	t0_1, y0_1, tf_1 = 0.0, 0.0, 8.0
 	h_values = [0.2, 0.1, 0.05, 0.025, 0.0125]
 
-	# Plot RK4 solutions and errors for quadratic growth
-	rk4_utils.plot_rk4_solutions(f1, y_exact1, t0_1, y0_1, tf_1, h_values, title="Sinusoidal")
-	rk4_utils.plot_rk4_local_and_global_error(f1, y_exact1, t0_1, y0_1, tf_1, h_values, title="Sinusoidal")
-	h_values = np.logspace(-4, 0, 100)
-	local_errors, global_errors = rk4_utils.plot_loglog_error_with_slope(f1, y_exact1, t0_1, y0_1, tf_1, h_values, title="Sinusoidal")
+	# # Plot RK4 solutions and errors for quadratic growth
+	# rk4_utils.plot_rk4_solutions(f1, y_exact1, t0_1, y0_1, tf_1, h_values, title="Sinusoidal")
+	# rk4_utils.plot_rk4_local_and_global_error(f1, y_exact1, t0_1, y0_1, tf_1, h_values, title="Sinusoidal")
+	# h_values = np.logspace(-4, 0, 100)
+	# local_errors, global_errors = rk4_utils.plot_loglog_error_with_slope(f1, y_exact1, t0_1, y0_1, tf_1, h_values, title="Sinusoidal")
+
+	h_values = np.logspace(0, -4, 500)
+	rk4_utils.rk4_relative_error_heatmap(f1, y_exact1, t0_1, y0_1, tf_1, h_values, title="Sinusoidal")
 
 	# ---------------- Exponential decay ----------------
 	f2 = lambda t, y: -2*y
@@ -46,11 +49,14 @@ if __name__=='__main__':
 	t0_2, y0_2, tf_2 = 0.0, 1.0, 2.0
 	h_values = [0.2, 0.1, 0.05, 0.025, 0.0125]
 
-	# Plot RK4 solutions and errors for exponential decay
-	rk4_utils.plot_rk4_solutions(f2, y_exact2, t0_2, y0_2, tf_2, h_values, title="Exponential Decay")
-	rk4_utils.plot_rk4_local_and_global_error(f2, y_exact2, t0_2, y0_2, tf_2, h_values, title="Exponential Decay")
-	h_values = np.logspace(-4, 0, 100)
-	local_errors, global_errors = rk4_utils.plot_loglog_error_with_slope(f2, y_exact2, t0_2, y0_2, tf_2, h_values, title="Exponential Decay")
+	# # Plot RK4 solutions and errors for exponential decay
+	# rk4_utils.plot_rk4_solutions(f2, y_exact2, t0_2, y0_2, tf_2, h_values, title="Exponential Decay")
+	# rk4_utils.plot_rk4_local_and_global_error(f2, y_exact2, t0_2, y0_2, tf_2, h_values, title="Exponential Decay")
+	# h_values = np.logspace(-4, 0, 100)
+	# local_errors, global_errors = rk4_utils.plot_loglog_error_with_slope(f2, y_exact2, t0_2, y0_2, tf_2, h_values, title="Exponential Decay")
+
+	h_values = np.logspace(0, -4, 500)
+	rk4_utils.rk4_relative_error_heatmap(f2, y_exact2, t0_2, y0_2, tf_2, h_values, title="Exponential Decay")
 	
 
 	# 2. SYSTEMATIC TEST: RK4.
