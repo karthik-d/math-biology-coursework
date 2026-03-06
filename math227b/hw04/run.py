@@ -98,17 +98,7 @@ if __name__ == "__main__":
 	analyze_true_lte()
 
 	## D. analyze error on other function.
-	hs, e1, e2 = analyze_pc_order(
-		T=1.0,  # longer time interval
-		A=np.array([[-1.0,  0.5],   # mild eigenvalues λ ≈ -0.75 ± 0.5i
-					[ 0.5, -1.5]]),
-		y0=np.array([1.0, 0.5])
-	)
+	# =============================================================================
+	# TEST SYSTEMS: Both GLOBAL error (analyze_pc_order) and LOCAL LTE (analyze_true_lte)
+	# =============================================================================
 
-	analyze_true_lte(
-		t0=0.0,  # time where LTE is evaluated
-		hs=np.logspace(-4, -1, 20),  # h range for LTE
-		A=np.array([[-1.0,  0.5],    # same mild system
-					[ 0.5, -1.5]]),
-		y0=np.array([1.0, 0.5])
-	)
