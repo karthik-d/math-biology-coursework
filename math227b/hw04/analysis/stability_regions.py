@@ -171,18 +171,17 @@ def plot_stability_overlay():
     plt.title("Overlay of Stability Regions: Predictor, Corrector, Predictor–Corrector")
 
     legend_elements = [
-        Patch(facecolor="gold",        alpha=0.6, label="Predictor stable"),
+        Patch(facecolor="gold", alpha=0.6, label="Predictor stable"),
         Patch(facecolor="mediumseagreen", alpha=0.4, label="Predictor–Corrector stable"),
-        Patch(facecolor="lightblue",   alpha=0.25, label="Corrector stable"),
-        Patch(facecolor="lightcoral",              label="Unstable background")
+        Patch(facecolor="lightblue", alpha=0.25, label="Corrector stable"),
+        Patch(facecolor="lightcoral", label="Unstable background")
     ]
     plt.legend(handles=legend_elements, loc="upper right")
     plt.show()
 
     
-
-if __name__ == "__main__":
-    plot_stability_predictor_corrector()
-    plot_stability_predictor()
-    plot_stability_corrector()
-    plot_stability_overlay()
+# if __name__ == "__main__":
+#     plot_stability_predictor_corrector()
+#     plot_stability_predictor()
+#     plot_stability_corrector()
+#     plot_stability_overlay()
