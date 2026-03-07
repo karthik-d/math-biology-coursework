@@ -107,30 +107,122 @@ def plot_single_h_2x2(res):
     return fig
 
 if __name__ == "__main__":
-    # System Definition
-    A = np.array([[-5.0, 3.0], [100.0, -301.0]])
-    y0 = np.array([52.29, 83.82])
-    t_span = (0.0, 0.1)
+	# System Definition
+	A = np.array([[-5.0, 3.0], [100.0, -301.0]])
+	y0 = np.array([52.29, 83.82])
+	t_span = (0.0, 3)
 
-    # --- Part 1: Stability Visualization (Original) ---
-    # hs_cases = [0.001, 0.004, 0.01] 
-    # for h in hs_cases:
-    #     print(f"Analyzing stability for h={h}...")
-    #     results = run_single_h(A, y0, h, T=t_span[1]) 
-    #     fig = plot_single_h_2x2(results)
-    #     plt.show()
+	# --- Part 1: Stability Visualization (Original) ---
+	# hs_cases = [0.001, 0.004, 0.01] 
+	# for h in hs_cases:
+	#     print(f"Analyzing stability for h={h}...")
+	#     results = run_single_h(A, y0, h, T=t_span[1]) 
+	#     fig = plot_single_h_2x2(results)
+	#     plt.show()
 
-    # --- Part 2: Convergence/Error Analysis ---
-    print("\nRunning Convergence Analysis...")
-    
-    # We choose h values within the stable region for the PC scheme
-    # to accurately measure the convergence slope.
-    h_convergence = np.logspace(-4.5, -3, 10) 
+	# System Definition
+	A = np.array([[-5.0, 3.0], [100.0, -301.0]])
+	y0 = np.array([52.29, 83.82])
+	t_span = (0.0, 1)
 
-    # 1. Global Error Analysis (Expected Slope: 2)
-    # This measures how the error at T=0.1 scales with h
-    analyze_global_error(f_linear, t_span, y0, A, h_convergence)
+	results = run_single_h(A, y0, h=0.001, T=1) 
+	fig = plot_single_h_2x2(results)
+	plt.show()
 
-    # 2. Local Truncation Error Analysis (Expected Slope: 3)
-    # This measures the error of a single step starting from exact data
-    analyze_local_error(f_linear, y0, A, h_convergence)
+	# --- Part 2: Convergence/Error Analysis ---
+	print("\nRunning Convergence Analysis...")
+
+	# We choose h values within the stable region for the PC scheme
+	# to accurately measure the convergence slope.
+	h_convergence = np.logspace(-4.5, -2.5, 50) 
+
+	# 1. Global Error Analysis (Expected Slope: 2)
+	analyze_global_error(f_linear, t_span, y0, A, h_convergence)
+
+	# 2. Local Truncation Error Analysis (Expected Slope: 3)
+	analyze_local_error(f_linear, y0, A, h_convergence)
+     
+
+		# =============================================================================
+	# 1. SCALAR EXPONENTIAL (Decay)
+	# y' = -k*y  => Exact: y(t) = y0 * exp(-k*t)
+	# =============================================================================
+	def test_scalar_exponential():
+		k = 2.0
+		A_scalar = np.array([[-k]])
+		y0_scalar = np.array([1.0])
+		t_span = (0.0, 1.0)
+		h_convergence = np.logspace(-4.5, -2.5, 50)
+		
+		print("--- Running Test: Scalar Exponential ---")
+		analyze_global_error(f_linear, t_span, y0_scalar, A_scalar, h_convergence)
+		analyze_local_error(f_linear, y0_scalar, A_scalar, h_convergence)
+
+
+	# =============================================================================
+	# 2. SIMPLE HARMONIC OSCILLATOR (Sinusoidal)
+	# y1' = y2, y2' = -y1 => Exact: y1 = cos(t), y2 = -sin(t)
+	# =============================================================================
+	def test_harmonic_oscillator():
+		# Matrix A for [y1' = y2; y2' = -y1]
+		A_osc = np.array([[0.0, 1.0], 
+						[-1.0, 0.0]])
+		y0_osc = np.array([1.0, 0.0]) # cos(0)=1, sin(0)=0
+		t_span = (0.0, 2.0 * np.pi)   # One full period
+		h_convergence = np.logspace(-4.5, -2.5, 50)
+		
+		print("--- Running Test: Simple Harmonic Oscillator ---")
+		analyze_global_error(f_linear, t_span, y0_osc, A_osc, h_convergence)
+		analyze_local_error(f_linear, y0_osc, A_osc, h_convergence)
+
+
+	# =============================================================================
+	# 3. COUPLED DECAY (Moderate Eigenvalues)
+	# =============================================================================
+	def test_coupled_decay():
+		# Non-stiff matrix with real, negative eigenvalues
+		A_coupled = np.array([[-2.0, 0.5], 
+							[0.1, -1.5]])
+		y0_coupled = np.array([10.0, 5.0])
+		t_span = (0.0, 0.5)
+		h_convergence = np.logspace(-4.5, -2.5, 50)
+		
+		print("--- Running Test: Coupled Decay ---")
+		analyze_global_error(f_linear, t_span, y0_coupled, A_coupled, h_convergence)
+		analyze_local_error(f_linear, y0_coupled, A_coupled, h_convergence)
+
+	def test_circular_orbit():
+		# y1' = -y2, y2' = y1  => Solution: y1 = cos(t), y2 = sin(t)
+		# This is a Hamiltonian system (conserves y1^2 + y2^2 = 1)
+		A_orbit = np.array([[0.0, -1.0], 
+							[1.0,  0.0]])
+		y0_orbit = np.array([1.0, 0.0])
+		t_span = (0.0, 10.0) # Integrate for several orbits
+		h_convergence = np.logspace(-4.5, -2.5, 50)
+
+		print("\n--- Running Test: Circular Orbit (Oscillatory) ---")
+		analyze_global_error(f_linear, t_span, y0_orbit, A_orbit, h_convergence)
+		analyze_local_error(f_linear, y0_orbit, A_orbit, h_convergence)
+            
+	def test_sequential_decay():
+		# y1' = -k1*y1
+		# y2' = k1*y1 - k2*y2
+		# Matrix A for k1=2, k2=1
+		A_chain = np.array([[-2.0,  0.0], 
+							[ 2.0, -1.0]])
+		y0_chain = np.array([1.0, 0.0])
+		t_span = (0.0, 2.0)
+		h_convergence = np.logspace(-4.5, -2.5, 50)
+		
+		print("\n--- Running Test: Sequential Decay (Chain) ---")
+		analyze_global_error(f_linear, t_span, y0_chain, A_chain, h_convergence)
+		analyze_local_error(f_linear, y0_chain, A_chain, h_convergence)
+            
+
+	if __name__ == "__main__":
+		# You can uncomment these one by one to verify your solver's accuracy
+		test_scalar_exponential()
+		test_harmonic_oscillator()
+		test_coupled_decay()
+		test_circular_orbit()
+		test_sequential_decay()
