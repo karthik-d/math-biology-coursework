@@ -8,7 +8,7 @@ from pkg.ivp.solver import (
     solve_adams_bashforth_predictor, 
     solve_predictor_corrector
 )
-from analysis.error import analyze_errors, local_error_heatmap
+from analysis.error import analyze_errors, local_error_heatmap, compare_global_errors
 
 def exact_solution_linear_system(t, A, y0):
     """Exact solution y(t) = exp(A t) y0."""
@@ -20,7 +20,7 @@ def detect_instability(t, Y, y_ref, threshold=3.0):
     norms_ref = np.linalg.norm(y_ref, axis=1)
     return norms_Y <= threshold * norms_ref
 
-def solve_and_plot_trajectories(A, y0, system_name="System", t_span=(0.0, 1), f=f_linear):
+def solve_and_plot_trajectories(A, y0, system_name="System", t_span=(0.0, 1), f=f_linear, h_values=np.logspace(-3, -5, 5)):
 	"""
 	Solve the system using predictor-only (AB2) and predictor-corrector (PECE) for multiple h values.
 	Generates two figures: Predictor-only and Predictor-Corrector.
@@ -28,7 +28,6 @@ def solve_and_plot_trajectories(A, y0, system_name="System", t_span=(0.0, 1), f=
 	Exact solution overlaid. Stable/unstable status in figure title.
 	"""
 
-	h_values = np.logspace(-0.5, -2, 5)  # 5 h values
 	n_comp = len(y0)
 	results = {'ab': [], 'pc': []}
 
@@ -67,17 +66,18 @@ def solve_and_plot_trajectories(A, y0, system_name="System", t_span=(0.0, 1), f=
 				ax.scatter(t, Y[:, i], color=color, s=10, alpha=1, label=f"Numerical")
 				# Instability onset
 				if onset is not None:
-					ax.axvline(onset, color='red', ls=':', lw=2, alpha=0.8, label='Divergence')
+					ax.axvline(onset, color='red', ls=':', lw=2, alpha=0.8, label='Divergence Onset')
 				
-				ax.set_title(f"h={h:.0e}", fontsize=10)
+				status_str = "[STABLE]" if res['stable'] else "[UNSTABLE]"
+				ax.set_title(f"h={h:.0e} {status_str}", fontsize=10)
 				if i == n_comp-1: ax.set_xlabel("t")
 				if j == 0: ax.set_ylabel(f"y_{i+1}")
 				ax.grid(True, alpha=0.2)
-				if i == 0 and j == 0: ax.legend(fontsize=8)
+				if i == n_comp-1 and j == len(res_list)-1: ax.legend(fontsize=8)
+				ax.set_yscale('log')  # Log scale to better visualize divergence
 		
 		# Overall figure title inside figure
-		status_str = "[STABLE]" if all(r['stable'] for r in res_list) else "[UNSTABLE]"
-		fig.suptitle(f"{method_name} Trajectories for {system_name} {status_str}", fontsize=12, fontweight='bold')
+		fig.suptitle(f"{method_name} Trajectories for {system_name} (Log Y-Axis)", fontsize=12, fontweight='bold')
 		
 		# Reduce whitespace to show title
 		fig.tight_layout(rect=[0, 0, 1, 0.95])  # leave space at top for suptitle
@@ -130,39 +130,27 @@ if __name__ == "__main__":
 	# System Definition
 	A = np.array([[-5.0, 3.0], [100.0, -301.0]])
 	y0 = np.array([52.29, 83.82])
-	t_span = (0.0, 3)
+	t_span = (0.0, 2)
 
 	# --- Part 1: Stability Visualization (Original) ---
-	# hs_cases = [0.001, 0.004, 0.01] 
-	# for h in hs_cases:
-	#     print(f"Analyzing stability for h={h}...")
-	#     results = run_single_h(A, y0, h, T=t_span[1]) 
-	#     fig = plot_single_h_2x2(results)
-	#     plt.show()
+	solve_and_plot_trajectories(A, y0, t_span=t_span, f=f_linear, system_name="Given System", h_values=[0.001, 0.004, 0.01] )
+	compare_global_errors(f_linear, solve_adams_bashforth_predictor, solve_predictor_corrector, t_span, y0, A, np.logspace(-2, -4.5, 50))
 
 	# System Definition
 	# A = np.array([[-5.0, 3.0], [100.0, -301.0]])
 	# y0 = np.array([52.29, 83.82])
 	# t_span = (0.0, 1)
 
-	# results = run_single_h(A, y0, h=0.001, T=1) 
-	# fig = plot_single_h_2x2(results)
-	# plt.show()
-
-	# # --- Part 2: Convergence/Error Analysis ---
-	# print("\nRunning Convergence Analysis...")
-
-	# # We choose h values within the stable region for the PC scheme
-	# # to accurately measure the convergence slope.
-	# h_convergence = np.logspace(-4.5, -2.5, 50) 
-
-	# ## Error Analysis (Expected Slope: 2)
-	# t_vals = np.linspace(0.1, 1.0, 50)  # time points for LTE evaluation
-	# h_vals = np.logspace(-3, -1, 10)     # step sizes
-	# LTE_mat = local_error_heatmap(f_linear, y0, A, h_vals, t_vals)
-	# analyze_errors(f_linear, t_span, y0, A, h_convergence)
+	# h_convergence = np.logspace(-5, -2.5, 50) 
+	# solve_and_plot_trajectories(A, y0, t_span=t_span, f=f_linear, system_name="Given System")
+	# analyze_errors(f_linear, solve_adams_bashforth_predictor, t_span, y0, A, h_convergence)
+	# analyze_errors(f_linear, solve_predictor_corrector, t_span, y0, A, h_convergence)
+	# t_vals = np.linspace(0.1, 3, 50)  # time points for LTE evaluation
+	# h_vals = np.logspace(-5, -3, 50)     # step sizes
+	# LTE_mat = local_error_heatmap(f_linear, solve_adams_bashforth_predictor,y0, A, h_vals, t_vals)
+	# LTE_mat = local_error_heatmap(f_linear, solve_predictor_corrector,y0, A, h_vals, t_vals)
 			
 	## ADDITIONAL TESTS.
-	test_harmonic_oscillator()
-	test_coupled_decay()
+	# test_harmonic_oscillator()
+	# test_coupled_decay()
 	# test_circular_orbit()
