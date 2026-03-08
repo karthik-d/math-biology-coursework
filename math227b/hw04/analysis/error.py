@@ -64,26 +64,6 @@ def analyze_errors(f, solver_fn, t_span, y0, A, h_values, t_lte=0.5):
 def compare_global_errors(f, solver_fn1, solver_fn2, t_span, y0, A, h_values):
     """
     Compare global truncation error of two solver functions.
-    
-    Parameters
-    ----------
-    f : callable
-        Derivative function f(t, y, A)
-    solver_fn1, solver_fn2 : callable
-        Solver functions that take (f, t_span, y0, h, A) and return (t_array, Y_array)
-    t_span : tuple
-        Integration interval (t0, T)
-    y0 : array_like
-        Initial condition
-    A : array_like
-        System matrix (for exact solution)
-    h_values : array_like
-        Step sizes to test
-        
-    Returns
-    -------
-    gte1, gte2 : ndarray
-        Global truncation errors for solver_fn1 and solver_fn2
     """
     
     y0 = np.atleast_1d(np.asarray(y0, dtype=float))
@@ -123,6 +103,78 @@ def compare_global_errors(f, solver_fn1, solver_fn2, t_span, y0, A, h_values):
     plt.show()
     
     return gte1, gte2
+
+
+def compare_local_errors(f, solver_fn1, solver_fn2, t_span, y0, A, h_values, t_lte=0.5):
+    """
+    Compare local truncation errors (LTE) for two solver functions.
+    Computes LTE as the error of the **last step before t_lte**.
+    
+    Parameters
+    ----------
+    f : callable
+        Derivative function f(t, y, A)
+    solver_fn1, solver_fn2 : callable
+        Solvers taking (f, t_span, y0, h, A) and returning (t_array, Y_array)
+    t_span : tuple
+        (t0, T)
+    y0 : array_like
+        Initial condition
+    A : array_like
+        System matrix (for linear systems)
+    h_values : array_like
+        Step sizes
+    t_lte : float
+        Time at which to evaluate LTE (last step before t_lte)
+        
+    Returns
+    -------
+    lte1, lte2 : np.ndarray
+        LTE for solver_fn1 and solver_fn2
+    """
+    
+    t0, _ = t_span
+    y0 = np.atleast_1d(np.asarray(y0, dtype=float))
+    
+    lte1 = []
+    lte2 = []
+
+    for h in h_values:
+        # --- Solver 1 ---
+        # Take enough steps from t0 to reach t_lte
+        n_steps = int(np.ceil((t_lte - t0)/h))
+        t_end = t0 + n_steps*h
+        t_num, Y_num = solver_fn1(f, (t0, t_end), y0, h, A)
+        
+        # Last step LTE: compare last numerical point to exact at that time
+        y_exact = exact_solution_linear_system(t_num[-1], A, y0)
+        lte1.append(np.linalg.norm(Y_num[-1] - y_exact))
+        
+        # --- Solver 2 ---
+        t_num, Y_num = solver_fn2(f, (t0, t_end), y0, h, A)
+        y_exact = exact_solution_linear_system(t_num[-1], A, y0)
+        lte2.append(np.linalg.norm(Y_num[-1] - y_exact))
+    
+    lte1 = np.array(lte1)
+    lte2 = np.array(lte2)
+    
+    # Reference O(h^3) line (for typical predictor-corrector LTE)
+    lte_ref = lte1[-1]*(h_values/h_values[-1])**3
+    
+    # --- Plot ---
+    plt.figure(figsize=(8,5))
+    plt.loglog(h_values, lte1, color='#FF7F0E', marker='o', lw=1.8, alpha=0.8, label=solver_fn1.__name__)
+    plt.loglog(h_values, lte2, color='#2CA02C', marker='s', lw=1.8, alpha=0.8, label=solver_fn2.__name__)
+    plt.loglog(h_values, lte_ref, 'k--', lw=1.5, alpha=0.6, label='O(h^3) ref')
+    
+    plt.xlabel("Step size h")
+    plt.ylabel(f"Local Truncation Error (LTE) at t≈{t_lte}")
+    plt.title("Local Error Comparison")
+    plt.grid(True, which="both", ls="--", alpha=0.4)
+    plt.legend()
+    plt.show()
+    
+    return lte1, lte2
 
 
 def local_error_heatmap(f, solver_fn, y0, A, h_values, t_values):

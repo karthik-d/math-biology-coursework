@@ -8,7 +8,7 @@ from pkg.ivp.solver import (
     solve_adams_bashforth_predictor, 
     solve_predictor_corrector
 )
-from analysis.error import analyze_errors, local_error_heatmap, compare_global_errors
+from analysis.error import analyze_errors, local_error_heatmap, compare_global_errors, compare_local_errors
 
 def exact_solution_linear_system(t, A, y0):
     """Exact solution y(t) = exp(A t) y0."""
@@ -133,8 +133,9 @@ if __name__ == "__main__":
 	t_span = (0.0, 2)
 
 	# --- Part 1: Stability Visualization (Original) ---
-	solve_and_plot_trajectories(A, y0, t_span=t_span, f=f_linear, system_name="Given System", h_values=[0.001, 0.004, 0.01] )
-	compare_global_errors(f_linear, solve_adams_bashforth_predictor, solve_predictor_corrector, t_span, y0, A, np.logspace(-2, -4.5, 50))
+	# solve_and_plot_trajectories(A, y0, t_span=t_span, f=f_linear, system_name="Given System", h_values=[0.001, 0.004, 0.01] )
+	# compare_global_errors(f_linear, solve_adams_bashforth_predictor, solve_predictor_corrector, t_span, y0, A, np.logspace(-2, -4, 50))
+	compare_local_errors(f_linear, solve_adams_bashforth_predictor, solve_predictor_corrector, t_span, y0, A, np.logspace(-2, -4, 50))
 
 	# System Definition
 	# A = np.array([[-5.0, 3.0], [100.0, -301.0]])
