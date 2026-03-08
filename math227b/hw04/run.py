@@ -20,107 +20,73 @@ def detect_instability(t, Y, y_ref, threshold=3.0):
     norms_ref = np.linalg.norm(y_ref, axis=1)
     return norms_Y <= threshold * norms_ref
 
-def run_single_h(A, y0, h, t0=0.0, T=0.1):
-    """Compute full solutions for a specific h value."""
-    t_ab_full, Y_ab_full = solve_adams_bashforth_predictor(f_linear, (t0, T), y0, h, A)
-    t_pc_full, Y_pc_full = solve_predictor_corrector(f_linear, (t0, T), y0, h, A)
+def solve_and_plot_trajectories(A, y0, system_name="System", t_span=(0.0, 1), f=f_linear):
+    """
+    Solve the system using predictor-only (AB2) and predictor-corrector (PECE) for multiple h values.
+    Generates two figures: Predictor-only and Predictor-Corrector.
+    Each figure: 2 rows (system components) × 5 columns (different h values)
+    Exact solution overlaid. Stable/unstable status in figure title.
+    """
     
-    Y_ref_at_ab = np.array([exact_solution_linear_system(tk, A, y0) for tk in t_ab_full])
-    Y_ref_at_pc = np.array([exact_solution_linear_system(tk, A, y0) for tk in t_pc_full])
+    h_values = np.logspace(-1, -5, 5)  # 5 h values
+    n_comp = len(y0)
+    results = {'ab': [], 'pc': []}
     
-    stable_ab_mask = detect_instability(t_ab_full, Y_ab_full, Y_ref_at_ab)
-    is_ab_stable = np.all(stable_ab_mask)
-    ab_onset = t_ab_full[~stable_ab_mask][0] if not is_ab_stable else None
+    # --- Solve for all h values ---
+    for h in h_values:
+        t0, T = t_span
+        
+        # Predictor-only (AB2)
+        t_ab, Y_ab = solve_adams_bashforth_predictor(f, t_span, y0, h, A)
+        Y_ref_ab = np.array([exact_solution_linear_system(tk, A, y0) for tk in t_ab])
+        stable_mask_ab = detect_instability(t_ab, Y_ab, Y_ref_ab)
+        ab_onset = t_ab[~stable_mask_ab][0] if not np.all(stable_mask_ab) else None
+        results['ab'].append({'h': h, 't': t_ab, 'Y': Y_ab, 'Y_ref': Y_ref_ab, 'onset': ab_onset, 'stable': np.all(stable_mask_ab)})
+        
+        # Predictor-Corrector (PECE)
+        t_pc, Y_pc = solve_predictor_corrector(f, t_span, y0, h, A)
+        Y_ref_pc = np.array([exact_solution_linear_system(tk, A, y0) for tk in t_pc])
+        stable_mask_pc = detect_instability(t_pc, Y_pc, Y_ref_pc)
+        pc_onset = t_pc[~stable_mask_pc][0] if not np.all(stable_mask_pc) else None
+        results['pc'].append({'h': h, 't': t_pc, 'Y': Y_pc, 'Y_ref': Y_ref_pc, 'onset': pc_onset, 'stable': np.all(stable_mask_pc)})
     
-    stable_pc_mask = detect_instability(t_pc_full, Y_pc_full, Y_ref_at_pc)
-    is_pc_stable = np.all(stable_pc_mask)
-    pc_onset = t_pc_full[~stable_pc_mask][0] if not is_pc_stable else None
+    def plot_grid(res_list, method_name, color):
+        fig, axes = plt.subplots(n_comp, len(h_values), figsize=(4*len(h_values), 3*n_comp), sharex=False, sharey=False)
+        if n_comp == 1: axes = [axes]
+        if len(h_values) == 1: axes = np.array([axes]).T
+        
+        for i in range(n_comp):
+            for j, res in enumerate(res_list):
+                ax = axes[i, j]
+                h = res['h']
+                t, Y, Y_ref, onset, stable = res['t'], res['Y'], res['Y_ref'], res['onset'], res['stable']
+                
+                # Exact solution
+                ax.plot(t, Y_ref[:, i], 'k--', lw=1.5, label='Exact')
+                # Numerical trajectory
+                ax.plot(t, Y[:, i], color=color, lw=1.2, alpha=0.7, label=f"h={h:.0e}")
+                # Instability onset
+                if onset is not None:
+                    ax.axvline(onset, color='red', ls=':', lw=2, alpha=0.8, label='Divergence')
+                
+                ax.set_title(f"h={h:.0e}", fontsize=10)
+                if i == n_comp-1: ax.set_xlabel("t")
+                if j == 0: ax.set_ylabel(f"y_{i+1}")
+                ax.grid(True, alpha=0.2)
+                if i == 0 and j == 0: ax.legend(fontsize=8)
+        
+        # Overall figure title
+        status_str = "[STABLE]" if all(r['stable'] for r in res_list) else "[UNSTABLE]"
+        fig.suptitle(f"{method_name} Trajectories for {system_name} {status_str}", fontsize=14, fontweight='bold', y=1.02)
+        fig.tight_layout()
+        return fig
     
-    t_ref_smooth = np.linspace(t0, T, 500)
-    Y_ref_smooth = np.array([exact_solution_linear_system(tk, A, y0) for tk in t_ref_smooth])
+    # --- Generate figures ---
+    fig_ab = plot_grid(results['ab'], "Predictor Only (AB2)", color='#228B22')
+    fig_pc = plot_grid(results['pc'], "Predictor-Corrector (PECE)", color='#4169E1')
     
-    return {
-        'h': h,
-        't_ab_full': t_ab_full, 'Y_ab_full': Y_ab_full, 'ab_onset': ab_onset, 'is_ab_stable': is_ab_stable,
-        't_pc_full': t_pc_full, 'Y_pc_full': Y_pc_full, 'pc_onset': pc_onset, 'is_pc_stable': is_pc_stable,
-        't_ref': t_ref_smooth, 'Y_ref': Y_ref_smooth
-    }
-
-def plot_single_h_2x2(res):
-    """Generate 2x2: [y1 Pred, y1 PC], [y2 Pred, y2 PC] vs Exact."""
-    fig, axes_grid = plt.subplots(2, 2, figsize=(14, 10), sharex=True)
-    
-    plot_map = [
-        (0, 0, 0, 'ab', 'Predictor (AB2)'),
-        (0, 1, 0, 'pc', 'Pred-Corr (PECE)'),
-        (1, 0, 1, 'ab', 'Predictor (AB2)'),
-        (1, 1, 1, 'pc', 'Pred-Corr (PECE)')
-    ]
-    
-    colors = {'ab': '#228B22', 'pc': '#4169E1', 'exact': '#000000'}
-    lw = 1.8  # Standard line width
-    alpha = 0.7
-    
-    for row, col, comp, meth, meth_name in plot_map:
-        ax = axes_grid[row, col]
-        
-        # Determine stability status for title
-        is_stable = res[f'is_{meth}_stable']
-        status_str = "[STABLE]" if is_stable else "[UNSTABLE]"
-        
-        # 1. Plot Exact (Dashed)
-        ax.plot(res['t_ref'], res['Y_ref'][:, comp], color=colors['exact'], 
-               ls='--', lw=lw, alpha=alpha, zorder=1, label="Exact")
-        
-        # 2. Plot Full Numerical Trajectory (Solid)
-        t_full = res[f't_{meth}_full']
-        Y_full = res[f'Y_{meth}_full']
-        onset = res[f'{meth}_onset']
-        
-        # Clipping for plot readability
-        Y_plot = np.clip(Y_full[:, comp], -1e5, 1e5)
-        
-        ax.plot(t_full, Y_plot, color=colors[meth], 
-               ls='-', lw=lw, alpha=alpha, zorder=5, label=f"{meth_name}")
-        
-        # 3. Mark Onset of Instability (Extra Thick)
-        if onset is not None:
-            ax.axvline(onset, color='red', ls=':', lw=3.5, alpha=0.9, label="Divergence Onset")
-        
-        # Aesthetics
-        var_name = f"y_{comp+1}"
-        ax.set_title(f"{status_str} ${var_name}(t)$: {meth_name}", 
-                     fontsize=13, fontweight='bold', color='red' if not is_stable else 'black')
-        ax.set_ylabel(f"Value of ${var_name}$")
-        if row == 1: ax.set_xlabel("Time $t$")
-        ax.legend(loc='upper right', fontsize=9)
-        ax.grid(True, alpha=0.2)
-        
-        # Y-limit scaling based on Exact reference
-        y_min, y_max = np.min(res['Y_ref'][:, comp]), np.max(res['Y_ref'][:, comp])
-        buffer = 0.5 * (y_max - y_min) if y_max != y_min else 1.0
-        ax.set_ylim(y_min - buffer, y_max + buffer)
-
-    fig.suptitle(f'Numerical Stability Comparison (h = {res["h"]})', 
-                fontsize=16, fontweight='bold', y=0.98)
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    return fig
-
-
-# =============================================================================
-# 1. SCALAR EXPONENTIAL (Decay)
-# y' = -k*y  => Exact: y(t) = y0 * exp(-k*t)
-# =============================================================================
-def test_scalar_exponential():
-	k = 2.0
-	A_scalar = np.array([[-k]])
-	y0_scalar = np.array([1.0])
-	t_span = (0.0, 1.0)
-	h_convergence = np.logspace(-4.5, -2.5, 50)
-	
-	print("--- Running Test: Scalar Exponential ---")
-	analyze_global_error(f_linear, t_span, y0_scalar, A_scalar, h_convergence)
-	analyze_local_error(f_linear, y0_scalar, A_scalar, h_convergence)
+    plt.show()
+    return fig_ab, fig_pc
 
 
 # =============================================================================
@@ -135,9 +101,12 @@ def test_harmonic_oscillator():
 	t_span = (0.0, 2.0 * np.pi)   # One full period
 	h_convergence = np.logspace(-4.5, -2.5, 50)
 	
+	solve_and_plot_trajectories(A_osc, y0_osc, t_span=t_span, f=f_linear, system_name="Harmonic Oscillator")
 	print("--- Running Test: Simple Harmonic Oscillator ---")
-	analyze_global_error(f_linear, t_span, y0_osc, A_osc, h_convergence)
-	analyze_local_error(f_linear, y0_osc, A_osc, h_convergence)
+	analyze_errors(f_linear, t_span, y0_osc, A_osc, h_convergence)
+	t_vals = np.linspace(0.1, 1.0, 50)  # time points for LTE evaluation
+	h_vals = np.logspace(-3, -1, 10)     # step sizes
+	LTE_mat = local_error_heatmap(f_linear, y0_osc, A_osc, h_vals, t_vals)
 
 
 # =============================================================================
@@ -150,9 +119,14 @@ def test_coupled_decay():
 	y0_coupled = np.array([10.0, 5.0])
 	t_span = (0.0, 0.5)
 	h_convergence = np.logspace(-4.5, -2.5, 50)
-	
+
+	solve_and_plot_trajectories(A_coupled, y0_coupled, t_span, f_linear, system_name="Coupled Decay")
 	print("--- Running Test: Coupled Decay ---")
 	analyze_errors(f_linear, t_span, y0_coupled, A_coupled, h_convergence)
+	t_vals = np.linspace(0.1, 1.0, 50)  # time points for LTE evaluation
+	h_vals = np.logspace(-3, -1, 10)     # step sizes
+	LTE_mat = local_error_heatmap(f_linear, y0_coupled, A_coupled, h_vals, t_vals)
+
 
 def test_circular_orbit():
 	# y1' = -y2, y2' = y1  => Solution: y1 = cos(t), y2 = sin(t)
@@ -163,8 +137,12 @@ def test_circular_orbit():
 	t_span = (0.0, 10.0) # Integrate for several orbits
 	h_convergence = np.logspace(-4.5, -2.5, 50)
 
+	solve_and_plot_trajectories(A_orbit, y0_orbit, t_span, f_linear)
 	print("\n--- Running Test: Circular Orbit (Oscillatory) ---")
 	analyze_errors(f_linear, t_span, y0_orbit, A_orbit, h_convergence)
+	t_vals = np.linspace(0.1, 1.0, 50)  # time points for LTE evaluation
+	h_vals = np.logspace(-3, -1, 10)     # step sizes
+	LTE_mat = local_error_heatmap(f_linear, y0, A_orbit, h_vals, t_vals)
       
 
 if __name__ == "__main__":
@@ -182,31 +160,28 @@ if __name__ == "__main__":
 	#     plt.show()
 
 	# System Definition
-	A = np.array([[-5.0, 3.0], [100.0, -301.0]])
-	y0 = np.array([52.29, 83.82])
-	t_span = (0.0, 1)
+	# A = np.array([[-5.0, 3.0], [100.0, -301.0]])
+	# y0 = np.array([52.29, 83.82])
+	# t_span = (0.0, 1)
 
-	results = run_single_h(A, y0, h=0.001, T=1) 
-	fig = plot_single_h_2x2(results)
-	plt.show()
+	# results = run_single_h(A, y0, h=0.001, T=1) 
+	# fig = plot_single_h_2x2(results)
+	# plt.show()
 
-	# --- Part 2: Convergence/Error Analysis ---
-	print("\nRunning Convergence Analysis...")
+	# # --- Part 2: Convergence/Error Analysis ---
+	# print("\nRunning Convergence Analysis...")
 
-	# We choose h values within the stable region for the PC scheme
-	# to accurately measure the convergence slope.
-	h_convergence = np.logspace(-4.5, -2.5, 50) 
+	# # We choose h values within the stable region for the PC scheme
+	# # to accurately measure the convergence slope.
+	# h_convergence = np.logspace(-4.5, -2.5, 50) 
 
-	## Error Analysis (Expected Slope: 2)
-	t_vals = np.linspace(0.1, 1.0, 50)  # time points for LTE evaluation
-	h_vals = np.logspace(-3, -1, 10)     # step sizes
-	LTE_mat = local_error_heatmap(f_linear, y0, A, h_vals, t_vals)
-	print(LTE_mat)
-	analyze_errors(f_linear, t_span, y0, A, h_convergence)
+	# ## Error Analysis (Expected Slope: 2)
+	# t_vals = np.linspace(0.1, 1.0, 50)  # time points for LTE evaluation
+	# h_vals = np.logspace(-3, -1, 10)     # step sizes
+	# LTE_mat = local_error_heatmap(f_linear, y0, A, h_vals, t_vals)
+	# analyze_errors(f_linear, t_span, y0, A, h_convergence)
 			
 	## ADDITIONAL TESTS.
-	# test_scalar_exponential()
-	# test_harmonic_oscillator()
-	# test_coupled_decay()
-	# test_circular_orbit()
-	# test_sequential_decay()
+	test_harmonic_oscillator()
+	test_coupled_decay()
+	test_circular_orbit()
