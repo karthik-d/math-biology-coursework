@@ -103,12 +103,10 @@ def test_harmonic_oscillator():
 	t_span = (0.0, 2.0 * np.pi)   # One full period
 	h_convergence = np.logspace(-4.5, -2.5, 50)
 	
-	solve_and_plot_trajectories(A_osc, y0_osc, t_span=t_span, f=f_linear, system_name="Harmonic Oscillator")
+	# solve_and_plot_trajectories(A_osc, y0_osc, t_span=t_span, f=f_linear, system_name="Harmonic Oscillator")
 	print("--- Running Test: Simple Harmonic Oscillator ---")
-	analyze_errors(f_linear, t_span, y0_osc, A_osc, h_convergence)
-	t_vals = np.linspace(0.1, 1.0, 50)  # time points for LTE evaluation
-	h_vals = np.logspace(-3, -1, 10)     # step sizes
-	LTE_mat = local_error_heatmap(f_linear, y0_osc, A_osc, h_vals, t_vals)
+	analyze_errors(f_linear, solve_adams_bashforth_predictor, t_span, y0_osc, A_osc, h_convergence)
+	analyze_errors(f_linear, solve_predictor_corrector, t_span, y0_osc, A_osc, h_convergence)
 
 
 # =============================================================================
@@ -124,27 +122,8 @@ def test_coupled_decay():
 
 	solve_and_plot_trajectories(A_coupled, y0_coupled, t_span=t_span, f=f_linear, system_name="Coupled Decay")
 	print("--- Running Test: Coupled Decay ---")
-	analyze_errors(f_linear, t_span, y0_coupled, A_coupled, h_convergence)
-	t_vals = np.linspace(0.1, 1.0, 50)  # time points for LTE evaluation
-	h_vals = np.logspace(-3, -1, 10)     # step sizes
-	LTE_mat = local_error_heatmap(f_linear, y0_coupled, A_coupled, h_vals, t_vals)
-
-
-def test_circular_orbit():
-	# y1' = -y2, y2' = y1  => Solution: y1 = cos(t), y2 = sin(t)
-	# This is a Hamiltonian system (conserves y1^2 + y2^2 = 1)
-	A_orbit = np.array([[0.0, -1.0], 
-						[1.0,  0.0]])
-	y0_orbit = np.array([1.0, 0.0])
-	t_span = (0.0, 10.0) # Integrate for several orbits
-	h_convergence = np.logspace(-4.5, -2.5, 50)
-
-	solve_and_plot_trajectories(A_orbit, y0_orbit, t_span, f_linear)
-	print("\n--- Running Test: Circular Orbit (Oscillatory) ---")
-	analyze_errors(f_linear, t_span, y0_orbit, A_orbit, h_convergence)
-	t_vals = np.linspace(0.1, 1.0, 50)  # time points for LTE evaluation
-	h_vals = np.logspace(-3, -1, 10)     # step sizes
-	LTE_mat = local_error_heatmap(f_linear, y0, A_orbit, h_vals, t_vals)
+	analyze_errors(f_linear, solve_adams_bashforth_predictor, t_span, y0_coupled, A_coupled, h_convergence)
+	analyze_errors(f_linear, solve_predictor_corrector, t_span, y0_coupled, A_coupled, h_convergence)
       
 
 if __name__ == "__main__":
@@ -186,4 +165,4 @@ if __name__ == "__main__":
 	## ADDITIONAL TESTS.
 	test_harmonic_oscillator()
 	test_coupled_decay()
-	test_circular_orbit()
+	# test_circular_orbit()

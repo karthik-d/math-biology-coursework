@@ -10,45 +10,31 @@ def exact_solution_linear_system(t, A, y0):
     return expm(A * t) @ y0
 
 
-def analyze_errors(f, t_span, y0, A, h_values):
-    """
-    Analyze both local and global errors for predictor-corrector method.
-    Plots both on a single log-log figure.
-    """
+def analyze_errors(f, solver_fn, t_span, y0, A, h_values, t_lte=0.5):
+    
     t0, T = t_span
     y0 = np.atleast_1d(np.asarray(y0, dtype=float))
     
-    gte = []  # Global error at final time
-    lte = []  # Local error for single step
-    t_lte = 0.5  # Arbitrary mid-point for local error
+    gte = []
+    lte = []
     
     for h in h_values:
-        N = int((T - t0)/h)
-        t_grid = t0 + h*np.arange(N+1)
-        Y = np.zeros((N+1, y0.size))
-        F = np.zeros((N+1, y0.size))
+        # --- Global Error via full solver ---
+        t_num, Y_num = solver_fn(f, t_span, y0, h, A)
+        Y_exact_final = exact_solution_linear_system(t_num[-1], A, y0)
+        gte.append(np.linalg.norm(Y_num[-1] - Y_exact_final))
         
-        Y[0] = y0
-        F[0] = f(t0, Y[0], A)
-        if N > 0:
-            Y[1] = exact_solution_linear_system(t_grid[1], A, y0)
-            F[1] = f(t_grid[1], Y[1], A)
-        
-        for n in range(1, N):
-            Y[n+1], F[n+1], _ = predictor_corrector_step(
-                Y[n], F[n], F[n-1], h, f, t_grid[n+1], A
-            )
-        y_exact_final = exact_solution_linear_system(t_grid[-1], A, y0)
-        gte.append(np.linalg.norm(Y[-1] - y_exact_final))
-        
-        # --- Local Error (single step) ---
-        t_nm1, t_n, t_np1 = t_lte - h, t_lte, t_lte + h
+        # --- Local Truncation Error (single step) ---
+        t_nm1, t_n = t_lte - h, t_lte
         y_nm1 = exact_solution_linear_system(t_nm1, A, y0)
         y_n = exact_solution_linear_system(t_n, A, y0)
-        y_exact_np1 = exact_solution_linear_system(t_np1, A, y0)
-        f_n = f(t_n, y_n, A)
         f_nm1 = f(t_nm1, y_nm1, A)
-        y_num_np1, _, _ = predictor_corrector_step(y_n, f_n, f_nm1, h, f, t_np1, A)
+        f_n = f(t_n, y_n, A)
+        
+        # One predictor-corrector step to t_n + h
+        y_num_np1, _, _ = predictor_corrector_step(y_n, f_n, f_nm1, h, f, t_n + h, A)
+        y_exact_np1 = exact_solution_linear_system(t_n + h, A, y0)
+        
         lte.append(np.linalg.norm(y_num_np1 - y_exact_np1))
     
     gte = np.array(gte)
@@ -60,19 +46,19 @@ def analyze_errors(f, t_span, y0, A, h_values):
     
     # --- Plot ---
     plt.figure(figsize=(8,5))
-    plt.loglog(h_values, gte, 'bo-', alpha=0.3, label='Global Error (GTE)')
-    plt.loglog(h_values, lte, 'ro-', alpha=0.3, label='Local Error (LTE)')
+    plt.loglog(h_values, gte, 'bo-', alpha=0.6, label='Global Error (GTE)')
+    plt.loglog(h_values, lte, 'ro-', alpha=0.6, label='Local Error (LTE)')
     plt.loglog(h_values, gte_ref, 'b--', alpha=1, label='O(h^2) ref')
     plt.loglog(h_values, lte_ref, 'r--', alpha=1, label='O(h^3) ref')
     
     plt.xlabel("Step size h")
     plt.ylabel("Error")
-    plt.title("Predictor-Corrector: Local and Global Error")
+    plt.title(f"{solver_fn.__name__}: Local and Global Error")
     plt.grid(True, which="both", ls="--", alpha=0.4)
     plt.legend()
     plt.show()
     
-    return gte, lte
+    return gte, lte 
 
 
 def local_error_heatmap(f, y0, A, h_values, t_values):
