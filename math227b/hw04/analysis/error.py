@@ -11,6 +11,10 @@ def exact_solution_linear_system(t, A, y0):
 
 
 def analyze_errors(f, solver_fn, t_span, y0, A, h_values, t_lte=0.5):
+    """
+    Compute Global Truncation Error (GTE) and Local Truncation Error (LTE)
+    correctly. LTE is computed as single-step error starting from exact previous values.
+    """
     
     t0, T = t_span
     y0 = np.atleast_1d(np.asarray(y0, dtype=float))
@@ -19,21 +23,36 @@ def analyze_errors(f, solver_fn, t_span, y0, A, h_values, t_lte=0.5):
     lte = []
     
     for h in h_values:
-        # --- Global Error via full solver ---
+        # -------------------------
+        # 1. Global Truncation Error
+        # -------------------------
         t_num, Y_num = solver_fn(f, t_span, y0, h, A)
         Y_exact_final = exact_solution_linear_system(t_num[-1], A, y0)
         gte.append(np.linalg.norm(Y_num[-1] - Y_exact_final))
         
-        # --- Local Truncation Error (single step) ---
-        t_nm1, t_n = t_lte - h, t_lte
-        y_nm1 = exact_solution_linear_system(t_nm1, A, y0)
-        y_n = exact_solution_linear_system(t_n, A, y0)
-        f_nm1 = f(t_nm1, y_nm1, A)
-        f_n = f(t_n, y_n, A)
+        # -------------------------
+        # 2. Local Truncation Error
+        # -------------------------
+        t_n  = t_lte
+        t_nm1 = t_n - h
+        t_np1 = t_n + h
         
-        # One predictor-corrector step to t_n + h
-        y_num_np1, _, _ = predictor_corrector_step(y_n, f_n, f_nm1, h, f, t_n + h, A)
-        y_exact_np1 = exact_solution_linear_system(t_n + h, A, y0)
+        # Exact previous values
+        y_nm1 = exact_solution_linear_system(t_nm1, A, y0)
+        y_n   = exact_solution_linear_system(t_n, A, y0)
+        y_exact_np1 = exact_solution_linear_system(t_np1, A, y0)
+        
+        if "predictor_corrector" in solver_fn.__name__.lower():
+            # PECE: single predictor-corrector step from exact y_n, y_nm1
+            f_n = f(t_n, y_n, A)
+            f_nm1 = f(t_nm1, y_nm1, A)
+            y_num_np1, _, _ = predictor_corrector_step(y_n, f_n, f_nm1, h, f, t_np1, A)
+        else:
+            # Predictor-only (explicit) single step using exact previous values
+            # For AB2: y_{n+1} = y_n + h/2 * (3 f_n - f_{n-1})
+            f_n = f(t_n, y_n, A)
+            f_nm1 = f(t_nm1, y_nm1, A)
+            y_num_np1 = y_n + (h/2)*(3*f_n - f_nm1)
         
         lte.append(np.linalg.norm(y_num_np1 - y_exact_np1))
     
@@ -41,8 +60,8 @@ def analyze_errors(f, solver_fn, t_span, y0, A, h_values, t_lte=0.5):
     lte = np.array(lte)
     
     # Reference slopes
-    gte_ref = gte[-1]*(h_values/h_values[-1])**2
-    lte_ref = lte[-1]*(h_values/h_values[-1])**3
+    gte_ref = gte[-1]*(h_values/h_values[-1])**2          # AB2 GTE ~ O(h^2)
+    lte_ref = lte[-1]*(h_values/h_values[-1])**3          # PECE LTE ~ O(h^3)
     
     # --- Plot ---
     plt.figure(figsize=(8,5))
@@ -53,12 +72,12 @@ def analyze_errors(f, solver_fn, t_span, y0, A, h_values, t_lte=0.5):
     
     plt.xlabel("Step size h")
     plt.ylabel("Error")
-    plt.title(f"{solver_fn.__name__}: Local and Global Error")
+    plt.title(f"{solver_fn.__name__}: Local and Global Error (correct LTE)")
     plt.grid(True, which="both", ls="--", alpha=0.4)
     plt.legend()
     plt.show()
     
-    return gte, lte 
+    return gte, lte
 
 
 def compare_global_errors(f, solver_fn1, solver_fn2, t_span, y0, A, h_values):
@@ -109,28 +128,6 @@ def compare_local_errors(f, solver_fn1, solver_fn2, t_span, y0, A, h_values, t_l
     """
     Compare local truncation errors (LTE) for two solver functions.
     Computes LTE as the error of the **last step before t_lte**.
-    
-    Parameters
-    ----------
-    f : callable
-        Derivative function f(t, y, A)
-    solver_fn1, solver_fn2 : callable
-        Solvers taking (f, t_span, y0, h, A) and returning (t_array, Y_array)
-    t_span : tuple
-        (t0, T)
-    y0 : array_like
-        Initial condition
-    A : array_like
-        System matrix (for linear systems)
-    h_values : array_like
-        Step sizes
-    t_lte : float
-        Time at which to evaluate LTE (last step before t_lte)
-        
-    Returns
-    -------
-    lte1, lte2 : np.ndarray
-        LTE for solver_fn1 and solver_fn2
     """
     
     t0, _ = t_span
@@ -176,47 +173,92 @@ def compare_local_errors(f, solver_fn1, solver_fn2, t_span, y0, A, h_values, t_l
     
     return lte1, lte2
 
+def compute_single_step_LTE(f, solver_fn, y_nm1, y_n, t_nm1, t_n, h, A):
+    """
+    Compute the LTE for a single step from t_n to t_n + h using exact previous values.
+    
+    Parameters
+    ----------
+    f : callable
+        Derivative function f(t, y, A)
+    solver_fn : callable
+        Solver function (used to determine method type)
+    y_nm1 : array_like
+        Exact solution at previous step
+    y_n : array_like
+        Exact solution at current step
+    t_nm1 : float
+        Previous step time
+    t_n : float
+        Current step time
+    h : float
+        Step size
+    A : array_like
+        System matrix (linear system)
+    
+    Returns
+    -------
+    LTE : float
+        Norm of single-step local truncation error
+    """
+    t_np1 = t_n + h
+    y_exact_np1 = exact_solution_linear_system(t_np1, A, y0=y_nm1)  # exact at next step
+
+    if "predictor_corrector" in solver_fn.__name__.lower():
+        # PECE: predictor-corrector single step
+        f_n = f(t_n, y_n, A)
+        f_nm1 = f(t_nm1, y_nm1, A)
+        y_num_np1, _, _ = predictor_corrector_step(y_n, f_n, f_nm1, h, f, t_np1, A)
+    else:
+        # AB2: explicit predictor step
+        f_n = f(t_n, y_n, A)
+        f_nm1 = f(t_nm1, y_nm1, A)
+        y_num_np1 = y_n + (h/2)*(3*f_n - f_nm1)
+
+    return np.linalg.norm(y_num_np1 - y_exact_np1)
+
 
 def local_error_heatmap(f, solver_fn, y0, A, h_values, t_values):
     """
-    Compute and plot a heatmap of local truncation error (LTE) 
-    with time on the x-axis and step size h on the y-axis, 
-    using a provided solver function for single-step evaluation.
+    Compute LTE heatmap using the exact previous values at each step.
     """
-    
     y0 = np.atleast_1d(np.asarray(y0, dtype=float))
     LTE_matrix = np.zeros((len(h_values), len(t_values)))
-    
+
     for i, h in enumerate(h_values):
-        for j, t_n in enumerate(t_values):
-            t_nm1, t_np1 = t_n - h, t_n + h
-            # Exact previous value and current value
-            y_nm1 = exact_solution_linear_system(t_nm1, A, y0)
-            y_n = exact_solution_linear_system(t_n, A, y0)
-            y_exact_np1 = exact_solution_linear_system(t_np1, A, y0)
-            
-            # Use single-step method for LTE
-            # For predictor-corrector, call predictor_corrector_step
-            # For other solver_fn, assume it can integrate a single step from t_n to t_np1
-            t_step, Y_step = solver_fn(f, (t_n, t_np1), y_n, h, A)
-            y_num_np1 = Y_step[-1]
-            
-            LTE_matrix[i, j] = np.linalg.norm(y_num_np1 - y_exact_np1)
-    
-    # Plot heatmap
+        for j, t_end in enumerate(t_values):
+            # --- simulate steps from t0 to t_end ---
+            t0 = t_values[0]
+            n_steps = max(1, int(np.ceil((t_end - t0)/h)))
+            t_grid = t0 + h * np.arange(n_steps + 1)
+
+            LTE_steps = np.zeros(n_steps)
+            for k in range(1, n_steps + 1):
+                t_nm1 = t_grid[k-1]
+                t_n = t_grid[k]
+
+                y_nm1 = exact_solution_linear_system(t_nm1, A, y0)
+                y_n = exact_solution_linear_system(t_n, A, y0)
+
+                LTE_steps[k-1] = compute_single_step_LTE(f, solver_fn, y_nm1, y_n, t_nm1, t_n, h, A)
+
+            # Take LTE of last step to t_end
+            LTE_matrix[i, j] = LTE_steps[-1]
+
+    # --- Plot heatmap ---
     plt.figure(figsize=(10,6))
     im = plt.imshow(
-        np.log(LTE_matrix), 
-        aspect='auto', 
-        origin='lower', 
+        np.log(LTE_matrix.T),
+        aspect='auto',
+        origin='lower',
         extent=[t_values[0], t_values[-1], h_values[0], h_values[-1]],
         cmap='viridis'
     )
     plt.colorbar(im, label="log(local truncation error)")
     plt.xlabel("Time t")
     plt.ylabel("Step size h")
-    plt.title(f"LTE Heatmap using {solver_fn.__name__}")
+    plt.title(f"LTE Heatmap using {solver_fn.__name__} (single-step)")
     plt.yscale('log')
     plt.show()
-    
+
     return LTE_matrix

@@ -134,22 +134,26 @@ if __name__ == "__main__":
 
 	# --- Part 1: Stability Visualization (Original) ---
 	# solve_and_plot_trajectories(A, y0, t_span=t_span, f=f_linear, system_name="Given System", h_values=[0.001, 0.004, 0.01] )
-	# compare_global_errors(f_linear, solve_adams_bashforth_predictor, solve_predictor_corrector, t_span, y0, A, np.logspace(-2, -4, 50))
-	compare_local_errors(f_linear, solve_adams_bashforth_predictor, solve_predictor_corrector, t_span, y0, A, np.logspace(-2, -4, 50))
+	# compare_global_errors(f_linear, solve_adams_bashforth_predictor, solve_predictor_corrector, t_span, y0, A, np.logspace(-2, -3, 50))
+	# compare_local_errors(f_linear, solve_adams_bashforth_predictor, solve_predictor_corrector, t_span, y0, A, np.logspace(-2, -3, 50), t_lte=2)
+	# t_vals = np.linspace(0.1, 2, 20)  # time points for LTE evaluation
+	# h_vals = np.logspace(-0.75, -1.5, 30)     # step sizes
+	# LTE_mat = local_error_heatmap(f_linear, solve_adams_bashforth_predictor,y0, A, h_vals, t_vals)
+	# LTE_mat = local_error_heatmap(f_linear, solve_predictor_corrector,y0, A, h_vals, t_vals)
 
 	# System Definition
 	# A = np.array([[-5.0, 3.0], [100.0, -301.0]])
 	# y0 = np.array([52.29, 83.82])
 	# t_span = (0.0, 1)
 
-	# h_convergence = np.logspace(-5, -2.5, 50) 
+	h_convergence = np.logspace(-5, -2.5, 50) 
 	# solve_and_plot_trajectories(A, y0, t_span=t_span, f=f_linear, system_name="Given System")
 	# analyze_errors(f_linear, solve_adams_bashforth_predictor, t_span, y0, A, h_convergence)
 	# analyze_errors(f_linear, solve_predictor_corrector, t_span, y0, A, h_convergence)
-	# t_vals = np.linspace(0.1, 3, 50)  # time points for LTE evaluation
-	# h_vals = np.logspace(-5, -3, 50)     # step sizes
-	# LTE_mat = local_error_heatmap(f_linear, solve_adams_bashforth_predictor,y0, A, h_vals, t_vals)
-	# LTE_mat = local_error_heatmap(f_linear, solve_predictor_corrector,y0, A, h_vals, t_vals)
+	t_vals = np.linspace(0.1, 2, 20)  # time points for LTE evaluation
+	h_vals = np.logspace(-2.5, -4, 20)     # step sizes
+	LTE_mat = local_error_heatmap(f_linear, solve_adams_bashforth_predictor,y0, A, h_vals, t_vals)
+	LTE_mat = local_error_heatmap(f_linear, solve_predictor_corrector,y0, A, h_vals, t_vals)
 			
 	## ADDITIONAL TESTS.
 	# test_harmonic_oscillator()
