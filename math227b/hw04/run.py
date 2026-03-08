@@ -21,72 +21,74 @@ def detect_instability(t, Y, y_ref, threshold=3.0):
     return norms_Y <= threshold * norms_ref
 
 def solve_and_plot_trajectories(A, y0, system_name="System", t_span=(0.0, 1), f=f_linear):
-    """
-    Solve the system using predictor-only (AB2) and predictor-corrector (PECE) for multiple h values.
-    Generates two figures: Predictor-only and Predictor-Corrector.
-    Each figure: 2 rows (system components) × 5 columns (different h values)
-    Exact solution overlaid. Stable/unstable status in figure title.
-    """
-    
-    h_values = np.logspace(-1, -5, 5)  # 5 h values
-    n_comp = len(y0)
-    results = {'ab': [], 'pc': []}
-    
-    # --- Solve for all h values ---
-    for h in h_values:
-        t0, T = t_span
-        
-        # Predictor-only (AB2)
-        t_ab, Y_ab = solve_adams_bashforth_predictor(f, t_span, y0, h, A)
-        Y_ref_ab = np.array([exact_solution_linear_system(tk, A, y0) for tk in t_ab])
-        stable_mask_ab = detect_instability(t_ab, Y_ab, Y_ref_ab)
-        ab_onset = t_ab[~stable_mask_ab][0] if not np.all(stable_mask_ab) else None
-        results['ab'].append({'h': h, 't': t_ab, 'Y': Y_ab, 'Y_ref': Y_ref_ab, 'onset': ab_onset, 'stable': np.all(stable_mask_ab)})
-        
-        # Predictor-Corrector (PECE)
-        t_pc, Y_pc = solve_predictor_corrector(f, t_span, y0, h, A)
-        Y_ref_pc = np.array([exact_solution_linear_system(tk, A, y0) for tk in t_pc])
-        stable_mask_pc = detect_instability(t_pc, Y_pc, Y_ref_pc)
-        pc_onset = t_pc[~stable_mask_pc][0] if not np.all(stable_mask_pc) else None
-        results['pc'].append({'h': h, 't': t_pc, 'Y': Y_pc, 'Y_ref': Y_ref_pc, 'onset': pc_onset, 'stable': np.all(stable_mask_pc)})
-    
-    def plot_grid(res_list, method_name, color):
-        fig, axes = plt.subplots(n_comp, len(h_values), figsize=(4*len(h_values), 3*n_comp), sharex=False, sharey=False)
-        if n_comp == 1: axes = [axes]
-        if len(h_values) == 1: axes = np.array([axes]).T
-        
-        for i in range(n_comp):
-            for j, res in enumerate(res_list):
-                ax = axes[i, j]
-                h = res['h']
-                t, Y, Y_ref, onset, stable = res['t'], res['Y'], res['Y_ref'], res['onset'], res['stable']
-                
-                # Exact solution
-                ax.plot(t, Y_ref[:, i], 'k--', lw=1.5, label='Exact')
-                # Numerical trajectory
-                ax.plot(t, Y[:, i], color=color, lw=1.2, alpha=0.7, label=f"h={h:.0e}")
-                # Instability onset
-                if onset is not None:
-                    ax.axvline(onset, color='red', ls=':', lw=2, alpha=0.8, label='Divergence')
-                
-                ax.set_title(f"h={h:.0e}", fontsize=10)
-                if i == n_comp-1: ax.set_xlabel("t")
-                if j == 0: ax.set_ylabel(f"y_{i+1}")
-                ax.grid(True, alpha=0.2)
-                if i == 0 and j == 0: ax.legend(fontsize=8)
-        
-        # Overall figure title
-        status_str = "[STABLE]" if all(r['stable'] for r in res_list) else "[UNSTABLE]"
-        fig.suptitle(f"{method_name} Trajectories for {system_name} {status_str}", fontsize=14, fontweight='bold', y=1.02)
-        fig.tight_layout()
-        return fig
-    
-    # --- Generate figures ---
-    fig_ab = plot_grid(results['ab'], "Predictor Only (AB2)", color='#228B22')
-    fig_pc = plot_grid(results['pc'], "Predictor-Corrector (PECE)", color='#4169E1')
-    
-    plt.show()
-    return fig_ab, fig_pc
+	"""
+	Solve the system using predictor-only (AB2) and predictor-corrector (PECE) for multiple h values.
+	Generates two figures: Predictor-only and Predictor-Corrector.
+	Each figure: 2 rows (system components) x 5 columns (different h values)
+	Exact solution overlaid. Stable/unstable status in figure title.
+	"""
+
+	h_values = np.logspace(-0.5, -2, 5)  # 5 h values
+	n_comp = len(y0)
+	results = {'ab': [], 'pc': []}
+
+	# --- Solve for all h values ---
+	for h in h_values:
+		t0, T = t_span
+		
+		# Predictor-only (AB2)
+		t_ab, Y_ab = solve_adams_bashforth_predictor(f, t_span, y0, h, A)
+		Y_ref_ab = np.array([exact_solution_linear_system(tk, A, y0) for tk in t_ab])
+		stable_mask_ab = detect_instability(t_ab, Y_ab, Y_ref_ab)
+		ab_onset = t_ab[~stable_mask_ab][0] if not np.all(stable_mask_ab) else None
+		results['ab'].append({'h': h, 't': t_ab, 'Y': Y_ab, 'Y_ref': Y_ref_ab, 'onset': ab_onset, 'stable': np.all(stable_mask_ab)})
+		
+		# Predictor-Corrector (PECE)
+		t_pc, Y_pc = solve_predictor_corrector(f, t_span, y0, h, A)
+		Y_ref_pc = np.array([exact_solution_linear_system(tk, A, y0) for tk in t_pc])
+		stable_mask_pc = detect_instability(t_pc, Y_pc, Y_ref_pc)
+		pc_onset = t_pc[~stable_mask_pc][0] if not np.all(stable_mask_pc) else None
+		results['pc'].append({'h': h, 't': t_pc, 'Y': Y_pc, 'Y_ref': Y_ref_pc, 'onset': pc_onset, 'stable': np.all(stable_mask_pc)})
+
+	def plot_grid(res_list, method_name, color):
+		fig, axes = plt.subplots(n_comp, len(h_values), figsize=(4*len(h_values), 3*n_comp), sharex=False, sharey=False)
+		if n_comp == 1: axes = [axes]
+		if len(h_values) == 1: axes = np.array([axes]).T
+		
+		for i in range(n_comp):
+			for j, res in enumerate(res_list):
+				ax = axes[i, j]
+				h = res['h']
+				t, Y, Y_ref, onset, stable = res['t'], res['Y'], res['Y_ref'], res['onset'], res['stable']
+				
+				# Exact solution
+				ax.plot(t, Y_ref[:, i], 'k--', lw=1.5, label='Exact')
+				# Numerical trajectory as scatter
+				ax.scatter(t, Y[:, i], color=color, s=10, alpha=1, label=f"Numerical")
+				# Instability onset
+				if onset is not None:
+					ax.axvline(onset, color='red', ls=':', lw=2, alpha=0.8, label='Divergence')
+				
+				ax.set_title(f"h={h:.0e}", fontsize=10)
+				if i == n_comp-1: ax.set_xlabel("t")
+				if j == 0: ax.set_ylabel(f"y_{i+1}")
+				ax.grid(True, alpha=0.2)
+				if i == 0 and j == 0: ax.legend(fontsize=8)
+		
+		# Overall figure title inside figure
+		status_str = "[STABLE]" if all(r['stable'] for r in res_list) else "[UNSTABLE]"
+		fig.suptitle(f"{method_name} Trajectories for {system_name} {status_str}", fontsize=12, fontweight='bold')
+		
+		# Reduce whitespace to show title
+		fig.tight_layout(rect=[0, 0, 1, 0.95])  # leave space at top for suptitle
+		return fig
+
+	# --- Generate figures ---
+	fig_ab = plot_grid(results['ab'], "Predictor Only (AB2)", color='#228B22')
+	fig_pc = plot_grid(results['pc'], "Predictor-Corrector (PECE)", color='#4169E1')
+
+	plt.show()
+	return fig_ab, fig_pc
 
 
 # =============================================================================
@@ -117,10 +119,10 @@ def test_coupled_decay():
 	A_coupled = np.array([[-2.0, 0.5], 
 						[0.1, -1.5]])
 	y0_coupled = np.array([10.0, 5.0])
-	t_span = (0.0, 0.5)
+	t_span = (0.0, 1.0)
 	h_convergence = np.logspace(-4.5, -2.5, 50)
 
-	solve_and_plot_trajectories(A_coupled, y0_coupled, t_span, f_linear, system_name="Coupled Decay")
+	solve_and_plot_trajectories(A_coupled, y0_coupled, t_span=t_span, f=f_linear, system_name="Coupled Decay")
 	print("--- Running Test: Coupled Decay ---")
 	analyze_errors(f_linear, t_span, y0_coupled, A_coupled, h_convergence)
 	t_vals = np.linspace(0.1, 1.0, 50)  # time points for LTE evaluation
