@@ -22,9 +22,6 @@ def analyze_global_error(f, t_span, y0, A, h_values):
 
     errors = []
 
-    # Exact terminal solution
-    y_exact_T = exact_solution_linear_system(T, A, y0)
-
     for h in h_values:
 
         # Robust step count
@@ -32,6 +29,9 @@ def analyze_global_error(f, t_span, y0, A, h_values):
 
         # Construct time grid
         t = t0 + h * np.arange(N + 1)
+
+        # IMPORTANT FIX: compute exact solution at the actual final time t_N
+        y_exact_final = exact_solution_linear_system(t[-1], A, y0)
 
         Y = np.zeros((N + 1, y0.size))
         F = np.zeros((N + 1, y0.size))
@@ -57,8 +57,8 @@ def analyze_global_error(f, t_span, y0, A, h_values):
                 A
             )
 
-        # Error at final time
-        errors.append(np.linalg.norm(Y[-1] - y_exact_T))
+        # Error at final numerical time
+        errors.append(np.linalg.norm(Y[-1] - y_exact_final))
 
     errors = np.array(errors)
 
@@ -81,13 +81,14 @@ def analyze_global_error(f, t_span, y0, A, h_values):
 
     plt.title("Global Error Convergence")
     plt.xlabel("Step size h")
-    plt.ylabel("Error at terminal time T")
+    plt.ylabel("Error at terminal time")
 
     plt.grid(True, which="both", ls="--", alpha=0.4)
     plt.legend()
     plt.show()
 
     return slope
+
 
 def analyze_local_error(f, y0, A, h_values):
     """
@@ -110,8 +111,7 @@ def analyze_local_error(f, y0, A, h_values):
         f_n = f(t_n, y_n, A)
         f_nm1 = f(t_nm1, y_nm1, A)
         
-        # Take a single step using the corrected signature
-        # Signature: y_n, f_n, f_nm1, h, f, t_np1, *f_args
+        # Take a single step
         y_num_np1, _, _ = predictor_corrector_step(y_n, f_n, f_nm1, h, f, t_np1, A)
         
         errors.append(np.linalg.norm(y_num_np1 - y_exact_np1))
