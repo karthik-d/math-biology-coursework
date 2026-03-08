@@ -3,19 +3,13 @@ function breast_cancer_fig1_structured
     %% Modular DDE Simulation for Breast Cancer Models
     %% =============================================================
     % Define simulation settings
-    tau = 1.2;           % Delay (days)
+    tau = 1;           % Delay (days)
     tspan = [0 1200];   % Simulation time
     % Initial condition: [CSC; PC; TDC]
     total_init = 1e3;
-    % perc_csc = 0.015;
-    % perc_pc = 0.259;
-    % perc_tdc = 0.726;
-    perc_csc = 0.08;
-    perc_pc = 0.07;
-    perc_tdc = 0.85;
-    % perc_csc = 1;
-    % perc_pc = 0.0;
-    % perc_tdc = 0.0;
+    perc_csc = 0.015;
+    perc_pc = 0.259;
+    perc_tdc = 0.726;
     history = total_init*[perc_csc; perc_pc; perc_tdc]; 
 
     % --- Define parameter sets for each model ---
@@ -30,13 +24,13 @@ function breast_cancer_fig1_structured
         'beta0', 8e-12, 'beta1', 4e-13);
 
     % Type II Feedback Model
-   params_typeII = struct(...
+    params_typeII = struct(...
         'p0', 0.5, 'q0', 0.2, ...
         'p1', 0.5, 'q1', 0.1, ...
         'v0', 1.0, 'v1', 2.0, ...
         'd0', 0.01, 'd1', 0.05, 'd2', 0.1, ...
-        'gamma01', 2e-14, 'gamma02', 2e-15, ...
-        'gamma11', 4e-13, 'gamma12', 4e-15);
+        'gamma01', 5e-6, 'gamma02', 7e-7, ...
+        'gamma11', 6e-5, 'gamma12', 2e-8);
 
     % Type I Feedback Model
     params_typeI = struct(...
@@ -80,30 +74,9 @@ function breast_cancer_fig1_structured
         results{i}.total_cells = total_cells;
         results{i}.name = m.name;
     end
-    
-    % plot data points.
-    observations = [ ...
-        0.0,  0.20;
-        1.0,  0.10;
-        2.0,  0.14;
-        3.0,  0.23;
-        4.0,  0.27;
-        5.0,  0.28;
-        6.0,  0.47;
-        7.0,  0.70;
-        8.0,  1.12;
-        9.0,  1.57;
-       10.0,  2.15;
-       12.0,  3.00;
-       13.0,  3.05;
-       14.0,  3.02];
-    t_obs = observations(:, 1); 
-    y_obs = observations(:, 2)*1e6;
-    plot(t_obs, y_obs, 'ko');
-
     model_names = cellfun(@(m) m.name, models, 'UniformOutput', false);
     legend(model_names, 'Location','northwest');
-    axis([0 20 0 4e6]);
+    axis([0 1200 0 1e7]);
 
     %% =============================================================
     %% Plot CSC percentage over time (like Fig 1d / Fig 2)
@@ -153,10 +126,10 @@ function dydt = dde_typeII(t,y,Z,p)
     x0 = y(1); x1 = y(2); x2 = y(3);
     x2_delayed = Z(3,1);
 
-    p0_eff = p.p0 / (1 + p.gamma01 * x2_delayed^2);
-    q0_eff = p.q0 / (1 + p.gamma02 * x2_delayed^2);
-    p1_eff = p.p1 / (1 + p.gamma11 * x2_delayed^2);
-    q1_eff = p.q1 / (1 + p.gamma12 * x2_delayed^2);
+    p0_eff = p.p0 / (1 + p.gamma01 * x2_delayed);
+    q0_eff = p.q0 / (1 + p.gamma02 * x2_delayed);
+    p1_eff = p.p1 / (1 + p.gamma11 * x2_delayed);
+    q1_eff = p.q1 / (1 + p.gamma12 * x2_delayed);
 
     dx0 = (p0_eff - q0_eff)*p.v0*x0 - p.d0*x0;
     dx1 = (1 - p0_eff + q0_eff)*p.v0*x0 + (p1_eff - q1_eff)*p.v1*x1 - p.d1*x1;
