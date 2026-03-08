@@ -175,9 +175,6 @@ M10 = readmatrix('data/tumor_growth_10nM.csv');
 time_days = M10(:, 1);
 data_10nM = M10(:, 2:end);
 
-M20 = readmatrix('data/tumor_growth_20nM.csv');
-data_20nM = M20(:, 2:end);
-
 for i=1:6
     results = fit_breast_cancer_models(time_days, data_10nM(:, i));
 end
