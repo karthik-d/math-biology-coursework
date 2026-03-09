@@ -83,6 +83,7 @@ function results = fit_breast_cancer_models(t_data_full, N_data_full)
     xlabel('Time (days)'); ylabel('Total Cells');
     title('Decoupled Model Fits: Independent Saturation Control');
     axis([0 15 0 max(N_data)*1.5]);
+    prettyfig;
 end
 
 %% --- Helper Functions ---
