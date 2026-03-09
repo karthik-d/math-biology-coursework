@@ -7,12 +7,12 @@ function breast_cancer_fig1_structured
     tspan = [0 1200];   % Simulation time
     % Initial condition: [CSC; PC; TDC]
     total_init = 1e3;
-    % perc_csc = 0.015;
-    % perc_pc = 0.259;
-    % perc_tdc = 0.726;
-    perc_csc = 0.8;
-    perc_pc = 0.1;
-    perc_tdc = 0.1;
+    perc_csc = 0.015;
+    perc_pc = 0.259;
+    perc_tdc = 0.726;
+    % perc_csc = 0.8;
+    % perc_pc = 0.1;
+    % perc_tdc = 0.1;
     % perc_csc = 1;
     % perc_pc = 0.0;
     % perc_tdc = 0.0;
@@ -104,6 +104,7 @@ function breast_cancer_fig1_structured
     model_names = cellfun(@(m) m.name, models, 'UniformOutput', false);
     legend(model_names, 'Location','northwest');
     axis([0 20 0 4e6]);
+    prettyfig;
 
     %% =============================================================
     %% Plot CSC percentage over time (like Fig 1d / Fig 2)

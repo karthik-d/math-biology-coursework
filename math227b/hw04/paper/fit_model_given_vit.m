@@ -110,6 +110,7 @@ function results = fit_breast_cancer_models(t_data, N_data)
     
     legend({'Data','Combined','TypeII','TypeI','Basic'},'Location','northwest');
     axis([0 20 0 4e6]);
+    prettyfig;
     
     xlabel('Time')
     ylabel('Total Cells')
