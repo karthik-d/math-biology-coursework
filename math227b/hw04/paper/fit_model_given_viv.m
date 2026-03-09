@@ -55,13 +55,16 @@ function perform_fit_with_proportions(t_data, N_data, name, t_offset)
     plot(t_fine + t_offset, N_fit, 'r-', 'LineWidth', 2, 'DisplayName', 'DDE Fit');
     xlabel('Time (days)'); ylabel('Total Cells');
     title(['Total Cell Number: ' name]); grid on; legend('Location', 'best');
+    xlim([50 120]);
+    prettyfig;
 
     %% Figure 2: CSC Proportion
     figure('Color', 'w', 'Name', [name ' - CSC Proportion']);
     plot(t_fine + t_offset, CSC_percent, 'b-', 'LineWidth', 2);
     xlabel('Time (days)'); ylabel('CSC (%)');
     title(['CSC Proportion Over Time: ' name]);
-    grid on; ylim([0 100]);
+    grid on; ylim([0 100]); xlim([50 120]);
+    prettyfig;
 
     %% Helper: Returns only log10(Total) for lsqcurvefit
     function log_N = model_helper(p_log, t_vector)

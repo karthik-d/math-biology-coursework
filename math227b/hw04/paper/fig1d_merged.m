@@ -6,16 +6,13 @@ function breast_cancer_fig1_structured
     tau = 1.2;           % Delay (days)
     tspan = [0 1200];   % Simulation time
     % Initial condition: [CSC; PC; TDC]
-    total_init = 1e3;
+    total_init = 1e4;
     perc_csc = 0.015;
     perc_pc = 0.259;
     perc_tdc = 0.726;
-    % perc_csc = 0.08;
-    % perc_pc = 0.07;
-    % perc_tdc = 0.85;
-    % perc_csc = 1;
-    % perc_pc = 0.0;
-    % perc_tdc = 0.0;
+    % perc_csc = 0.8;
+    % perc_pc = 0.1;
+    % perc_tdc = 0.1;
     history = total_init*[perc_csc; perc_pc; perc_tdc]; 
 
     % --- Define parameter sets for each model ---
@@ -87,6 +84,7 @@ function breast_cancer_fig1_structured
     model_names = cellfun(@(m) m.name, models, 'UniformOutput', false);
     legend('Combined', 'H605 #1', 'H605 #2', 'MCF7/HER2 #1', 'MCF7/HER2 #2');
     axis([50 120 0 7e11]);
+    prettyfig;
 
     %% =============================================================
     %% Plot CSC percentage over time (like Fig 1d / Fig 2)
