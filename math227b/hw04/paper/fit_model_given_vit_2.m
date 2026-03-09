@@ -59,6 +59,7 @@ function results = fit_breast_cancer_proportions_final()
         plot(t_plot, prop_model*100, 'Color', results(i).color, 'LineWidth', 2, 'DisplayName', results(i).name);
     end
     xlabel('Time (days)'); ylabel('CSC %'); legend('Location','best');
+    prettyfig;
 end
 
 %% --- Helper Functions ---
