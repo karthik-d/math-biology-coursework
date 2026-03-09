@@ -47,6 +47,7 @@ function perform_csc_fit(t_data, y_data)
     xlabel('Culture time (days)'); ylabel('CD44+CD24- (%)');
     title('Fit to CSC Proportion'); 
     grid on; ylim([0 100]); xlim([0 15]); legend('Location', 'best');
+    prettyfig;
 
     %% Helper: Returns CSC % for lsqcurvefit
     function csc_pct = model_helper(p_log, t_vector)

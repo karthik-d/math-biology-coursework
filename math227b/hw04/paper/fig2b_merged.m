@@ -6,7 +6,7 @@ function breast_cancer_fig1_structured
     tau = 1.2;           % Delay (days)
     tspan = [0 1200];   % Simulation time
     % Initial condition: [CSC; PC; TDC]
-    total_init = 1e3;
+    total_init = 1e5;
     % perc_csc = 0.015;
     % perc_pc = 0.259;
     % perc_tdc = 0.726;
@@ -67,6 +67,7 @@ function breast_cancer_fig1_structured
 
     legend('Given DDE Parameters', 'Observed');
     axis([0 15 0 100]);
+    prettyfig;
 
     %% =============================================================
     %% Plot CSC percentage over time (like Fig 1d / Fig 2)
