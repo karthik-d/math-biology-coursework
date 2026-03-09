@@ -1,4 +1,59 @@
-function fit_breast_cancer_dde_final()
+function breast_cancer_fig1_structured
+    %% =============================================================
+    %% Modular DDE Simulation for Breast Cancer Models
+    %% =============================================================
+    % Define simulation settings
+    tau = 1.2;           % Delay (days)
+    tspan = [0 1200];   % Simulation time
+    % Initial condition: [CSC; PC; TDC]
+    total_init = 1e3;
+    perc_csc = 0.015;
+    perc_pc = 0.259;
+    perc_tdc = 0.726;
+    % perc_csc = 0.08;
+    % perc_pc = 0.07;
+    % perc_tdc = 0.85;
+    % perc_csc = 1;
+    % perc_pc = 0.0;
+    % perc_tdc = 0.0;
+    history = total_init*[perc_csc; perc_pc; perc_tdc]; 
+
+    % --- Define parameter sets for each model ---
+    % Combined Model (Type I + Type II)
+    params_combined = struct(...
+        'p0', 0.5, 'q0', 0.2, ...
+        'p1', 0.5, 'q1', 0.1, ...
+        'v0', 1.0, 'v1', 2.0, ...
+        'd0', 0.01, 'd1', 0.05, 'd2', 0.1, ...
+        'gamma01', 1e-23, 'gamma02', 2e-24, ...
+        'gamma11', 4e-22, 'gamma12', 5e-23, ...
+        'beta0', 8e-27, 'beta1', 4e-27);
+
+    % --- Store models in a struct array ---
+    models = {...
+        struct('name','Combined','func',@dde_combined,'params',params_combined,'color','r')};
+
+    %% =============================================================
+    %% Run simulations and collect results
+    %% =============================================================
+    results = cell(size(models));
+    figure('Color','w'); hold on; grid on;
+    xlabel('Time (days)'); ylabel('Total Cell Number'); title('Total Cell Number Over Time');
+    
+    for i = 1:numel(models)
+        m = models{i};
+        % if (m.name ~= "Combined")
+        %     continue;
+        % end
+        sol = dde23(@(t,y,Z) m.func(t,y,Z,m.params), tau, history, tspan);
+        total_cells = sum(sol.y,1);
+        plot(sol.x, total_cells, m.color,'LineWidth',2);
+        % plot(sol.x, sol.y(1, :)./total_cells*100, m.color,'LineWidth',2);
+        results{i}.sol = sol;
+        results{i}.total_cells = total_cells;
+        results{i}.name = m.name;
+    end
+    
     %% 1. Data Matrix
     data_matrix = [
         53,  0.0,  NaN,  NaN,  NaN; 56,  NaN,  NaN,  NaN,  0.0;
@@ -15,7 +70,6 @@ function fit_breast_cancer_dde_final()
         109, 4.7,  3.2,  NaN,  NaN; 111, NaN,  NaN,  2.9,  2.3;
         115, 5.3,  4.4,  NaN,  NaN; 120, 4.9,  NaN,  NaN,  NaN
     ];
-    group_names = {'H605 #1', 'H605 #2', 'MCF7/HER2 #1', 'MCF7/HER2 #2'};
 
     for i = 2:5
         col = data_matrix(:, i);
@@ -24,95 +78,56 @@ function fit_breast_cancer_dde_final()
             t_data = data_matrix(valid, 1);
             t_start = t_data(1);
             t_data_norm = t_data - t_start;
-            N_data = (col(valid) .* 1e11) + 1e5; 
+            N_data = (col(valid) .* 1e11); 
             
-            fprintf('\n--- Fitting %s ---\n', group_names{i-1});
-            perform_fit_with_proportions(t_data_norm(:), N_data(:), group_names{i-1}, t_start);
+            plot(t_data(:), N_data(:), '.', 'MarkerSize', 20);
         end
     end
+
+    model_names = cellfun(@(m) m.name, models, 'UniformOutput', false);
+    legend('Combined', 'H605 #1', 'H605 #2', 'MCF7/HER2 #1', 'MCF7/HER2 #2');
+    axis([50 120 0 7e11]);
+
+    %% =============================================================
+    %% Plot CSC percentage over time (like Fig 1d / Fig 2)
+    %% =============================================================
+    % figure('Color','w'); hold on; grid on;
+    % xlabel('Time (days)'); ylabel('Percentage of CSCs (%)'); title('CSC Fraction Over Time');
+    % 
+    % for i = 1:numel(results)
+    %     sol = results{i}.sol;
+    %     total_cells = sum(sol.y,1);
+    %     csc_frac = 100 * sol.y(1,:) ./ total_cells; % CSC fraction
+    %     plot(sol.x, csc_frac, models{i}.color, 'LineWidth',2);
+    % end
+    % legend(model_names, 'Location','northeast');
+    % axis([0 120 0 7e11]);
 end
 
-function perform_fit_with_proportions(t_data, N_data, name, t_offset)
-    % p_log = [beta0, beta1, gamma01, gamma02, gamma11, gamma12, v0, v1, init_total]
-    p_guess_log = [-25, -25, -22, -22, -22, -22, log10(0.8), log10(1.5), log10(N_data(1))];
-    lb = [-40, -40, -40, -40, -40, -40, log10(0.1), log10(0.1), 5]; 
-    ub = [-10, -10, -10, -10, -10, -10, log10(5.0), log10(5.0), 14];
 
-    options = optimoptions('lsqcurvefit', 'Display', 'iter', 'DiffMinChange', 0.1, ...
-        'FunctionTolerance', 1e-10, 'OptimalityTolerance', 1e-10);
+%% =============================================================
+%% --- DDE Model Functions ---
+%% =============================================================
 
-    % Perform the fit using the log-residual helper
-    [p_fit_log, ~] = lsqcurvefit(@(p, t) model_helper(p, t), p_guess_log, t_data, log10(N_data), lb, ub, options);
-
-    %% Final Simulation for Plotting
-    t_fine = linspace(0, max(t_data), 200)';
-    [N_fit, CSC_fit, PC_fit, TDC_fit] = get_full_model_state(p_fit_log, t_fine);
-    CSC_percent = 100 * (CSC_fit ./ N_fit);
-
-    %% Figure 1: Linear Total Cell Fit
-    figure('Color', 'w', 'Name', [name ' - Total Cells']);
-    plot(t_data + t_offset, N_data, 'ko', 'MarkerFaceColor', 'k', 'DisplayName', 'Data'); hold on;
-    plot(t_fine + t_offset, N_fit, 'r-', 'LineWidth', 2, 'DisplayName', 'DDE Fit');
-    xlabel('Time (days)'); ylabel('Total Cells');
-    title(['Total Cell Number: ' name]); grid on; legend('Location', 'best');
-
-    %% Figure 2: CSC Proportion
-    figure('Color', 'w', 'Name', [name ' - CSC Proportion']);
-    plot(t_fine + t_offset, CSC_percent, 'b-', 'LineWidth', 2);
-    xlabel('Time (days)'); ylabel('CSC (%)');
-    title(['CSC Proportion Over Time: ' name]);
-    grid on; ylim([0 100]);
-
-    %% Helper: Returns only log10(Total) for lsqcurvefit
-    function log_N = model_helper(p_log, t_vector)
-        [N, ~, ~, ~] = get_full_model_state(p_log, t_vector);
-        log_N = log10(N + 1);
-    end
-
-    %% Main Solver Engine
-    function [Total, CSC, PC, TDC] = get_full_model_state(p_log, t_vector)
-        p_val = 10.^p_log;
-        ps.beta0 = p_val(1); ps.beta1 = p_val(2);
-        ps.gamma01 = p_val(3); ps.gamma02 = p_val(4);
-        ps.gamma11 = p_val(5); ps.gamma12 = p_val(6);
-        ps.v0 = p_val(7); ps.v1 = p_val(8);
-        init_val = p_val(9);
-
-        ps.p0 = 0.5; ps.q0 = 0.2; ps.p1 = 0.5; ps.q1 = 0.1;
-        ps.d0 = 0.01; ps.d1 = 0.05; ps.d2 = 0.10;
-        ps.h = 2; tau = 2;
-        
-        % History [CSC; PC; TDC]
-        history = init_val * [0.70; 0.20; 0.10];
-
-        try
-            opts = ddeset('RelTol', 1e-5, 'AbsTol', 1e-8);
-            sol = dde23(@(t,y,Z) dde_rhs(t,y,Z,ps), tau, history, [0, max(t_vector)], opts);
-            y_interp = deval(sol, t_vector);
-            CSC = y_interp(1, :)';
-            PC  = y_interp(2, :)';
-            TDC = y_interp(3, :)';
-            Total = CSC + PC + TDC;
-        catch
-            Total = zeros(length(t_vector), 1) + 1e-5;
-            CSC = Total; PC = Total; TDC = Total;
-        end
-    end
-end
-
-function dydt = dde_rhs(t, y, Z, p)
+function dydt = dde_combined(t,y,Z,p)
+    % Combined Type I + Type II Feedback
     x0 = y(1); x1 = y(2); x2 = y(3);
-    x2_del = Z(3,1);
-    
-    p0_e = p.p0 / (1 + p.gamma01 * x2_del^p.h);
-    q0_e = p.q0 / (1 + p.gamma02 * x2_del^p.h);
-    p1_e = p.p1 / (1 + p.gamma11 * x2_del^p.h);
-    q1_e = p.q1 / (1 + p.gamma12 * x2_del^p.h);
-    v0_e = p.v0 / (1 + p.beta0 * x2_del^p.h);
-    v1_e = p.v1 / (1 + p.beta1 * x2_del^p.h);
+    x2_delayed = Z(3,1);
 
-    dx0 = (p0_e - q0_e) * v0_e * x0 - p.d0 * x0;
-    dx1 = (1 - p0_e + q0_e) * v0_e * x0 + (p1_e - q1_e) * v1_e * x1 - p.d1 * x1;
-    dx2 = (1 - p1_e + q1_e) * v1_e * x1 - p.d2 * x2;
+    % Type II feedback on symmetric division
+    p0_eff = p.p0 / (1 + p.gamma01 * x2_delayed^2);
+    q0_eff = p.q0 / (1 + p.gamma02 * x2_delayed^2);
+    p1_eff = p.p1 / (1 + p.gamma11 * x2_delayed^2);
+    q1_eff = p.q1 / (1 + p.gamma12 * x2_delayed^2);
+
+    % Type I feedback on proliferation rates
+    v0_eff = p.v0 / (1 + p.beta0 * x2_delayed^2);
+    v1_eff = p.v1 / (1 + p.beta1 * x2_delayed^2);
+
+    % DDE System
+    dx0 = (p0_eff - q0_eff)*v0_eff*x0 - p.d0*x0;
+    dx1 = (1 - p0_eff + q0_eff)*v0_eff*x0 + (p1_eff - q1_eff)*v1_eff*x1 - p.d1*x1;
+    dx2 = (1 - p1_eff + q1_eff)*v1_eff*x1 - p.d2*x2;
     dydt = [dx0; dx1; dx2];
 end
+

@@ -3,19 +3,13 @@ function breast_cancer_fig1_structured
     %% Modular DDE Simulation for Breast Cancer Models
     %% =============================================================
     % Define simulation settings
-    tau = 1.2;           % Delay (days)
+    tau = 2;           % Delay (days)
     tspan = [0 1200];   % Simulation time
     % Initial condition: [CSC; PC; TDC]
-    total_init = 1e3;
-    % perc_csc = 0.015;
-    % perc_pc = 0.259;
-    % perc_tdc = 0.726;
-    perc_csc = 0.8;
-    perc_pc = 0.1;
-    perc_tdc = 0.1;
-    % perc_csc = 1;
-    % perc_pc = 0.0;
-    % perc_tdc = 0.0;
+    total_init = 1e7;
+    perc_csc = 0.015;
+    perc_pc = 0.259;
+    perc_tdc = 0.726;
     history = total_init*[perc_csc; perc_pc; perc_tdc]; 
 
     % --- Define parameter sets for each model ---
@@ -35,8 +29,8 @@ function breast_cancer_fig1_structured
         'p1', 0.5, 'q1', 0.1, ...
         'v0', 1.0, 'v1', 2.0, ...
         'd0', 0.01, 'd1', 0.05, 'd2', 0.1, ...
-        'gamma01', 2e-14, 'gamma02', 2e-15, ...
-        'gamma11', 4e-13, 'gamma12', 4e-15);
+        'gamma01', 5e-14, 'gamma02', 7e-15, ...
+        'gamma11', 6e-13, 'gamma12', 2e-15);
 
     % Type I Feedback Model
     params_typeI = struct(...
@@ -74,36 +68,36 @@ function breast_cancer_fig1_structured
         % end
         sol = dde23(@(t,y,Z) m.func(t,y,Z,m.params), tau, history, tspan);
         total_cells = sum(sol.y,1);
-        plot(sol.x, total_cells, m.color,'LineWidth',2);
-        % plot(sol.x, sol.y(1, :)./total_cells*100, m.color,'LineWidth',2);
+        % plot(sol.x, total_cells, m.color,'LineWidth',2);
+        plot(sol.x, sol.y(1, :)./total_cells*100, m.color,'LineWidth',2);
         results{i}.sol = sol;
         results{i}.total_cells = total_cells;
         results{i}.name = m.name;
     end
     
-    % plot data points.
-    observations = [ ...
-        0.0,  0.20;
-        1.0,  0.10;
-        2.0,  0.14;
-        3.0,  0.23;
-        4.0,  0.27;
-        5.0,  0.28;
-        6.0,  0.47;
-        7.0,  0.70;
-        8.0,  1.12;
-        9.0,  1.57;
-       10.0,  2.15;
-       12.0,  3.00;
-       13.0,  3.05;
-       14.0,  3.02];
-    t_obs = observations(:, 1); 
-    y_obs = observations(:, 2)*1e6;
-    scatter(t_obs, y_obs, 'k', 'filled');
-
+    % % plot data points.
+    % observations = [ ...
+    %     0.0,  0.20;
+    %     1.0,  0.10;
+    %     2.0,  0.14;
+    %     3.0,  0.23;
+    %     4.0,  0.27;
+    %     5.0,  0.28;
+    %     6.0,  0.47;
+    %     7.0,  0.70;
+    %     8.0,  1.12;
+    %     9.0,  1.57;
+    %    10.0,  2.15;
+    %    12.0,  3.00;
+    %    13.0,  3.05;
+    %    14.0,  3.02];
+    % t_obs = observations(:, 1); 
+    % y_obs = observations(:, 2)*1e6;
+    % plot(t_obs, y_obs, 'ko');
+    % 
     model_names = cellfun(@(m) m.name, models, 'UniformOutput', false);
     legend(model_names, 'Location','northwest');
-    axis([0 20 0 4e6]);
+    axis([0 20 0 8]);
 
     %% =============================================================
     %% Plot CSC percentage over time (like Fig 1d / Fig 2)

@@ -1,115 +1,118 @@
-%% --- DRIVER SCRIPT ---
-data_matrix = [
-    53,  0.0,  NaN,  NaN,  NaN; 56,  NaN,  NaN,  NaN,  0.0;
-    60,  0.0,  NaN,  NaN,  NaN; 63,  NaN,  NaN,  NaN,  0.0;
-    67,  0.0,  NaN,  NaN,  NaN; 69,  NaN,  NaN,  0.0,  NaN;
-    70,  NaN,  NaN,  NaN,  0.1; 73,  0.0,  NaN,  NaN,  NaN;
-    74,  NaN,  0.1,  NaN,  NaN; 76,  NaN,  NaN,  0.0,  NaN;
-    77,  NaN,  NaN,  NaN,  0.2; 80,  NaN,  0.3,  NaN,  NaN;
-    83,  NaN,  NaN,  0.1,  NaN; 84,  NaN,  NaN,  NaN,  0.4;
-    88,  NaN,  0.9,  NaN,  NaN; 90,  NaN,  NaN,  0.4,  NaN;
-    91,  NaN,  NaN,  NaN,  0.6; 96,  NaN,  1.2,  NaN,  NaN;
-    97,  1.3,  NaN,  0.8,  NaN; 98,  NaN,  NaN,  NaN,  1.2;
-    102, 2.4,  1.3,  NaN,  NaN; 104, NaN,  NaN,  1.7,  1.6;
-    109, 4.7,  3.2,  NaN,  NaN; 111, NaN,  NaN,  2.9,  2.3;
-    115, 5.3,  4.4,  NaN,  NaN; 120, 4.9,  NaN,  NaN,  NaN
-];
+function fit_breast_cancer_dde_final()
+    %% 1. Data Matrix
+    data_matrix = [
+        53,  0.0,  NaN,  NaN,  NaN; 56,  NaN,  NaN,  NaN,  0.0;
+        60,  0.0,  NaN,  NaN,  NaN; 63,  NaN,  NaN,  NaN,  0.0;
+        67,  0.0,  NaN,  NaN,  NaN; 69,  NaN,  NaN,  0.0,  NaN;
+        70,  NaN,  NaN,  NaN,  0.1; 73,  0.0,  NaN,  NaN,  NaN;
+        74,  NaN,  0.1,  NaN,  NaN; 76,  NaN,  NaN,  0.0,  NaN;
+        77,  NaN,  NaN,  NaN,  0.2; 80,  NaN,  0.3,  NaN,  NaN;
+        83,  NaN,  NaN,  0.1,  NaN; 84,  NaN,  NaN,  NaN,  0.4;
+        88,  NaN,  0.9,  NaN,  NaN; 90,  NaN,  NaN,  0.4,  NaN;
+        91,  NaN,  NaN,  NaN,  0.6; 96,  NaN,  1.2,  NaN,  NaN;
+        97,  1.3,  NaN,  0.8,  NaN; 98,  NaN,  NaN,  NaN,  1.2;
+        102, 2.4,  1.3,  NaN,  NaN; 104, NaN,  NaN,  1.7,  1.6;
+        109, 4.7,  3.2,  NaN,  NaN; 111, NaN,  NaN,  2.9,  2.3;
+        115, 5.3,  4.4,  NaN,  NaN; 120, 4.9,  NaN,  NaN,  NaN
+    ];
+    group_names = {'H605 #1', 'H605 #2', 'MCF7/HER2 #1', 'MCF7/HER2 #2'};
 
-group_names = {'H605 #1', 'H605 #2', 'MCF7/HER2 #1', 'MCF7/HER2 #2'};
-
-for i = 2:5
-    col = data_matrix(:, i);
-    valid = ~isnan(col);
-    if sum(valid) > 2
-        t_data = data_matrix(valid, 1);
-        N_data = col(valid) .* 1e11; 
-        fprintf('\n--- Fitting %s ---\n', group_names{i-1});
-        fit_breast_cancer_models(t_data(:), N_data(:), group_names{i-1});
-    end
-end
-
-%% --- MAIN FITTING FUNCTION ---
-function results = fit_breast_cancer_models(t_data, N_data, title_str)
-    tau = 1.2;
-    tspan = [0 max(t_data)];
-    N0 = max(N_data(1), 1e7); % Minimum starting population
-    
-    % Initial guesses for [f_csc, f_pc]
-    theta0 = [0.1, 0.2];
-    lb = [1e-5, 1e-5];
-    ub = [0.9, 0.9];
-    
-    % CRITICAL CHANGE: DiffMinChange forced to 1e-2 to jump over flat spots
-    options = optimoptions('lsqnonlin', ...
-        'Display','iter', ...
-        'MaxIterations', 200, ...
-        'StepTolerance', 1e-12, ...
-        'DiffMinChange', 1e-2, ... 
-        'FunctionTolerance', 1e-10);
-
-    % Adjusted Proliferation Rates: Increased v0/v1 to match rapid late-stage growth
-    params_combined = struct('p0',0.6,'q0',0.1,'p1',0.5,'q1',0.1,'v0',1.8,'v1',2.5,...
-                             'd0',0.01,'d1',0.05,'d2',0.1,...
-                             'gamma01',1e-24,'gamma02',1e-24,...
-                             'gamma11',1e-24,'gamma12',1e-24,...
-                             'beta0',1e-13,'beta1',1e-14);
-    
-    params_basic = struct('p0',0.6,'q0',0.1,'p1',0.5,'q1',0.1,'v0',1.8,'v1',2.5,...
-                          'd0',0.01,'d1',0.05,'d2',0.1);
-
-    models = { ...
-        struct('name','Feedback','func',@dde_combined,'params',params_combined,'color','r'), ...
-        struct('name','No-Feedback','func',@dde_basic,'params',params_basic,'color','k')};
-    
-    figure; hold on; grid on;
-    scatter(t_data, N_data, 70, 'k', 'filled', 'DisplayName', 'Data');
-
-    for i = 1:length(models)
-        m = models{i};
-        % Rescaling the residual internally to keep the solver in a 'healthy' range
-        objfun = @(theta) (log(simulate_model(theta,m.func,m.params,t_data,tspan,tau,N0)+1e6) - log(N_data+1e6));
-        
-        try
-            theta_fit = lsqnonlin(objfun,theta0,lb,ub,options);
-            tplot = linspace(0, max(t_data), 150);
-            N_model = simulate_model(theta_fit, m.func, m.params, tplot, tspan, tau, N0);
-            plot(tplot, N_model, 'Color', m.color, 'LineWidth', 2.5, 'DisplayName', m.name);
-        catch ME
-            fprintf('Model %s failed: %s\n', m.name, ME.message);
+    for i = 2:5
+        col = data_matrix(:, i);
+        valid = ~isnan(col);
+        if sum(valid) > 2
+            t_data = data_matrix(valid, 1);
+            t_start = t_data(1);
+            t_data_norm = t_data - t_start;
+            N_data = (col(valid) .* 1e11) + 1e5; 
+            
+            fprintf('\n--- Fitting %s ---\n', group_names{i-1});
+            perform_fit_with_proportions(t_data_norm(:), N_data(:), group_names{i-1}, t_start);
         end
     end
-    
-    legend('Location', 'northwest');
+end
+
+function perform_fit_with_proportions(t_data, N_data, name, t_offset)
+    % p_log = [beta0, beta1, gamma01, gamma02, gamma11, gamma12, v0, v1, init_total]
+    p_guess_log = [-25, -25, -22, -22, -22, -22, log10(0.8), log10(1.5), log10(N_data(1))];
+    lb = [-40, -40, -40, -40, -40, -40, log10(0.1), log10(0.1), 5]; 
+    ub = [-10, -10, -10, -10, -10, -10, log10(5.0), log10(5.0), 14];
+
+    options = optimoptions('lsqcurvefit', 'Display', 'iter', 'DiffMinChange', 0.1, ...
+        'FunctionTolerance', 1e-10, 'OptimalityTolerance', 1e-10);
+
+    % Perform the fit using the log-residual helper
+    [p_fit_log, ~] = lsqcurvefit(@(p, t) model_helper(p, t), p_guess_log, t_data, log10(N_data), lb, ub, options);
+
+    %% Final Simulation for Plotting
+    t_fine = linspace(0, max(t_data), 200)';
+    [N_fit, CSC_fit, PC_fit, TDC_fit] = get_full_model_state(p_fit_log, t_fine);
+    CSC_percent = 100 * (CSC_fit ./ N_fit);
+
+    %% Figure 1: Linear Total Cell Fit
+    figure('Color', 'w', 'Name', [name ' - Total Cells']);
+    plot(t_data + t_offset, N_data, 'ko', 'MarkerFaceColor', 'k', 'DisplayName', 'Data'); hold on;
+    plot(t_fine + t_offset, N_fit, 'r-', 'LineWidth', 2, 'DisplayName', 'DDE Fit');
     xlabel('Time (days)'); ylabel('Total Cells');
-    title(['Optimization Results: ', title_str]);
-    axis([0 120 0 7e11]);
+    title(['Total Cell Number: ' name]); grid on; legend('Location', 'best');
+
+    %% Figure 2: CSC Proportion
+    figure('Color', 'w', 'Name', [name ' - CSC Proportion']);
+    plot(t_fine + t_offset, CSC_percent, 'b-', 'LineWidth', 2);
+    xlabel('Time (days)'); ylabel('CSC (%)');
+    title(['CSC Proportion Over Time: ' name]);
+    grid on; ylim([0 100]);
+
+    %% Helper: Returns only log10(Total) for lsqcurvefit
+    function log_N = model_helper(p_log, t_vector)
+        [N, ~, ~, ~] = get_full_model_state(p_log, t_vector);
+        log_N = log10(N + 1);
+    end
+
+    %% Main Solver Engine
+    function [Total, CSC, PC, TDC] = get_full_model_state(p_log, t_vector)
+        p_val = 10.^p_log;
+        ps.beta0 = p_val(1); ps.beta1 = p_val(2);
+        ps.gamma01 = p_val(3); ps.gamma02 = p_val(4);
+        ps.gamma11 = p_val(5); ps.gamma12 = p_val(6);
+        ps.v0 = p_val(7); ps.v1 = p_val(8);
+        init_val = p_val(9);
+
+        ps.p0 = 0.5; ps.q0 = 0.2; ps.p1 = 0.5; ps.q1 = 0.1;
+        ps.d0 = 0.01; ps.d1 = 0.05; ps.d2 = 0.10;
+        ps.h = 2; tau = 2;
+        
+        % History [CSC; PC; TDC]
+        history = init_val * [0.70; 0.20; 0.10];
+
+        try
+            opts = ddeset('RelTol', 1e-5, 'AbsTol', 1e-8);
+            sol = dde23(@(t,y,Z) dde_rhs(t,y,Z,ps), tau, history, [0, max(t_vector)], opts);
+            y_interp = deval(sol, t_vector);
+            CSC = y_interp(1, :)';
+            PC  = y_interp(2, :)';
+            TDC = y_interp(3, :)';
+            Total = CSC + PC + TDC;
+        catch
+            Total = zeros(length(t_vector), 1) + 1e-5;
+            CSC = Total; PC = Total; TDC = Total;
+        end
+    end
 end
 
-%% --- DDE FUNCTIONS ---
-function dydt = dde_combined(t,y,Z,p)
+function dydt = dde_rhs(t, y, Z, p)
     x0 = y(1); x1 = y(2); x2 = y(3);
-    x2_delayed = Z(3,1);
-    % Feedback Logic
-    p0_eff = p.p0 / (1 + p.gamma01 * x2_delayed^2);
-    q0_eff = p.q0 / (1 + p.gamma02 * x2_delayed^2);
-    v0_eff = p.v0 / (1 + p.beta0 * x2_delayed);
-    v1_eff = p.v1 / (1 + p.beta1 * x2_delayed);
-    dydt = [(p0_eff - q0_eff)*v0_eff*x0 - p.d0*x0;
-            (1 - p0_eff + q0_eff)*v0_eff*x0 + (p.p1 - p.q1)*v1_eff*x1 - p.d1*x1;
-            (1 - p.p1 + p.q1)*v1_eff*x1 - p.d2*x2];
-end
+    x2_del = Z(3,1);
+    
+    p0_e = p.p0 / (1 + p.gamma01 * x2_del^p.h);
+    q0_e = p.q0 / (1 + p.gamma02 * x2_del^p.h);
+    p1_e = p.p1 / (1 + p.gamma11 * x2_del^p.h);
+    q1_e = p.q1 / (1 + p.gamma12 * x2_del^p.h);
+    v0_e = p.v0 / (1 + p.beta0 * x2_del^p.h);
+    v1_e = p.v1 / (1 + p.beta1 * x2_del^p.h);
 
-function dydt = dde_basic(t,y,~,p)
-    dydt = [(p.p0 - p.q0)*p.v0*y(1) - p.d0*y(1);
-            (1 - p.p0 + p.q0)*p.v0*y(1) + (p.p1 - p.q1)*p.v1*y(2) - p.d1*y(2);
-            (1 - p.p1 + p.q1)*p.v1*y(2) - p.d2*y(3)];
-end
-
-%% --- SIMULATION CORE ---
-function N_model = simulate_model(theta,model_func,params,t_eval,tspan,tau,N0)
-    history = N0 * [theta(1); theta(2); max(0, 1-theta(1)-theta(2))];
-    opts = ddeset('RelTol',1e-4,'AbsTol',1e-7);
-    sol = dde23(@(t,y,Z) model_func(t,y,Z,params), tau, history, tspan, opts);
-    y_out = deval(sol, t_eval);
-    N_model = sum(y_out, 1);
+    dx0 = (p0_e - q0_e) * v0_e * x0 - p.d0 * x0;
+    dx1 = (1 - p0_e + q0_e) * v0_e * x0 + (p1_e - q1_e) * v1_e * x1 - p.d1 * x1;
+    dx2 = (1 - p1_e + q1_e) * v1_e * x1 - p.d2 * x2;
+    dydt = [dx0; dx1; dx2];
 end
