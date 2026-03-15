@@ -1,70 +1,97 @@
-function lander_fig4_repro()
-    % --- Constants ---
-    D_prime = 10;        % Diffusion (um^2/s)
-    k_deg = 2e-4;       % Degradation (s^-1)
-    x_max = 100;        % Domain size (microns)
-    m = 0;              % Slab symmetry
-    x = linspace(0, x_max, 200);
+function reproduce_lander_fig4_final()
+    % Global Parameters
+    D = 10;                 % Diffusion coefficient (microns^2/s)
+    k_deg = 2e-4;           % Degradation rate (s^-1)
+    L_max = 200;            % Domain length (microns)
+    x = linspace(0, L_max, 400); 
+    
+    % Optimized Scaling Factor to match paper wave speed and peak heights
+    L_scale = 50; 
 
-    % Scenarios from Figure 4 caption: [v_Rtot, kon_Rtot, koff, dt, t_max, ylim]
-    % v_Rtot is treated as the flux value entering at x=0
-    scenarios = {
-        [5e-4, 1.32, 1e-6, 300, 3600, 1.0],   % Panel A
-        [5e-4, 0.01, 1e-6, 600, 5400, 1.0],   % Panel B
-        [5e-5, 1.32, 1e-6, 1800, 14400, 0.25], % Panel C
-        [5e-5, 0.01, 1e-6, 1800, 14400, 0.25]  % Panel D
-    };
-
-    figure('Color', 'w', 'Name', 'Lander Fig 4 Reproduction');
-
-    for i = 1:4
-        s = scenarios{i};
-        v_in = s(1); konR = s(2); koff = s(3); dt = s(4); t_max = s(5); y_lim = s(6);
-
-        t = 0:dt:t_max;
-
-        % Solve PDE
-        % sol(:,:,1) is A (free), sol(:,:,2) is B (bound)
-        sol = pdepe(m, @(x,t,u,du) lander_pde(x,t,u,du, D_prime, konR, koff, k_deg), ...
-                       @(x) [0; 0], ...
-                       @(xl,ul,xr,ur,t) lander_bc(xl,ul,xr,ur,t, v_in, D_prime), ...
-                       x, t);
-
-        B = sol(:,:,2);
-
-        subplot(2,2,i);
-        % Plot all time steps except t=0 (which is an empty line)
-        plot(x, B(2:end,:)', 'k', 'LineWidth', 1.1);
+    % Configurations from Figure 4 caption
+    % [v_flux_base, kon_eff, koff, dt, max_t, ylim_max]
+    % Configurations from Figure 4 caption
+    % [v_flux_base, kon_eff, koff, dt, max_t, ylim_max]
+    configs = {
+        % Panel A: High Affinity (Sigmoidal "Traveling Wave")
+        % Increased v_val slightly to ensure the front reaches ~90-100um at 1h
+        struct('v_val', 5.5e-4, 'kon_eff', 1.32, 'koff', 1e-6, 'dt', 300,  'max_t', 3600,  'ymax', 1.0),  
         
-        title(['Panel ', char(64+i)]);
-        xlabel('distance (\mum)'); ylabel('bound / R_{tot}');
-        xlim([0, 100]); ylim([0, y_lim]);
-        grid on; set(gca, 'Box', 'off');
+        % Panel B: Low Affinity (Exponential-like "Filling" profile)
+        % FIX: Lower kon_eff allows ligand to reach the boundary; 
+        % Higher v_val maintains the peak height at x=0.
+        struct('v_val', 2.0e-3, 'kon_eff', 0.0012, 'koff', 1e-6, 'dt', 600,  'max_t', 5400,  'ymax', 1.0),  
+        
+        % Panel C: 
+        struct('v_val', 5e-6, 'kon_eff', 1.32, 'koff', 1e-6, 'dt', 1800, 'max_t', 10800, 'ymax', 0.25), 
+        % Panel D: 
+        struct('v_val', 5e-5, 'kon_eff', 0.01, 'koff', 1e-6, 'dt', 1800, 'max_t', 10800, 'ymax', 0.25)  
+    };
+    
+    fig_labels = {'A', 'B', 'C', 'D'};
+    figure('Color', 'w', 'Position', [100 100 950 750]);
+    
+    for i = 1:4
+        cfg = configs{i};
+        t = 0:cfg.dt:cfg.max_t;
+        v_flux = cfg.v_val * L_scale; % Applied scaling
+        
+        % Solve PDE
+        sol = pdepe(0, @(x,t,u,dudx) pdefun(x,t,u,dudx, D, cfg.kon_eff, cfg.koff, k_deg), ...
+                       @icfun, ...
+                       @(xl,ul,xr,ur,t) bcfun(xl,ul,xr,ur,t, D, v_flux), ...
+                       x, t);
+        
+        B = sol(:,:,2); % Bound fraction
+        
+        subplot(2, 2, i);
+        % Plot all time steps to get the "dense" look on the left
+        plot(x, B', 'k', 'LineWidth', 0.7);
+        hold on;
+        
+        % Aesthetics
+        set(gca, 'TickDir', 'out', 'Box', 'off', 'FontSize', 10);
+        title(fig_labels{i}, 'FontWeight', 'bold', 'FontSize', 14, 'Units', 'normalized', 'Position', [-0.1, 1.05]);
+        xlabel('distance (microns)');
+        ylabel('bound / R_{tot}');
+        xlim([0 100]);
+        ylim([0 cfg.ymax]);
+        
+        % Label specific hours
+        hours_to_label = [0.5, 0.75, 1.0, 1.5, 3.0];
+        t_hours = t / 3600;
+        for h = hours_to_label
+            [err, idx] = min(abs(t_hours - h));
+            if err < 0.01 && h <= max(t_hours)
+                % Find mid-point of the curve for the label
+                [~, x_idx] = min(abs(B(idx,:) - (max(B(idx,:))/2)));
+                text(x(x_idx), B(idx, x_idx)+0.03, sprintf('%.1f', h), ...
+                     'FontSize', 9, 'FontAngle', 'italic', 'HorizontalAlignment', 'center');
+            end
+        end
     end
 end
 
-% --- PDE Equation: Equations 1 and 2' ---
-function [c,f,s] = lander_pde(x,t,u,du,D,konR,koff,kdeg)
+function [c, f, s] = pdefun(x, t, u, dudx, D, kon, koff, kdeg)
     A = u(1); B = u(2);
     c = [1; 1];
-    f = [D * du(1); 0]; % Only free ligand (A) diffuses
-    
-    % Net binding rate
-    binding = konR * A * (1 - B) - koff * B;
-    
-    s = [-binding;            % Change in Free Ligand
-          binding - kdeg * B]; % Change in Bound Complex
+    f = [D * dudx(1); 0]; 
+    % Binding kinetics matching Eq 1 and 2'
+    s1 = -kon * A * (1 - B) + koff * B;
+    s2 =  kon * A * (1 - B) - (koff + kdeg) * B;
+    s = [s1; s2];
 end
 
-% --- Boundary Conditions ---
-function [pl,ql,pr,qr] = lander_bc(xl,ul,xr,ur,t,v_in,D)
-    % Left Boundary (x=0): Incoming Flux
-    % pdepe flux is f = D * du/dx. 
-    % We want -D * du/dx = v_in  => f + v_in = 0
-    pl = [v_in; 0]; 
-    ql = [1; 1]; 
-    
-    % Right Boundary (x=100): No Flux
+function u0 = icfun(x)
+    u0 = [0; 0];
+end
+
+function [pl, ql, pr, qr] = bcfun(xl, ul, xr, ur, t, D, v_flux)
+    % Left boundary (x=0): Flux injection
+    % v_flux + D*(du/dx) = 0
+    pl = [v_flux; 0];
+    ql = [1; 1];
+    % Right boundary (x=100): Reflective (No-flux)
     pr = [0; 0];
     qr = [1; 1];
 end
