@@ -16,6 +16,6 @@ if __name__ == "__main__":
 	)
 
 	# Assume x, usol, times are obtained from your solver
-	overlay_times = np.linspace(0, T, 4)			# times at which to overlay u(x)
+	overlay_times = np.linspace(0, T, 9)			# times at which to overlay u(x)
 	overlay_x = [0.0, 0.25, 0.5, 0.75, 1.0]			# spatial locations to plot time trajectories
 	plot_pde_solution(x, times, usol, overlay_times=overlay_times, overlay_x=overlay_x)
