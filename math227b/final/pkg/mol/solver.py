@@ -4,24 +4,27 @@ import numpy as np
 def rhs(u, dx, D, c, v):
     N = len(u)
     dudt = np.zeros_like(u)
-
+    
     # Internal points
     dudt[1:N-1] = D * (u[2:] - 2*u[1:N-1] + u[0:N-2]) / dx**2 + v[1:N-1] - c*u[1:N-1]
-
+    
     # Boundary x=0 (Neumann)
     dudt[0] = D * (u[1] - 2*u[0] + u[1]) / dx**2 + v[0] - c*u[0]
-
+    
     # Boundary x=1 (Dirichlet)
-    dudt[-1] = 0           # already fine
-    u[-1] = 0              # **enforce Dirichlet on the input** for k2
+    dudt[-1] = 0  # okay, derivative is zero at Dirichlet
     return dudt
+
 
 def rk2_step(u, dt, dx, D, c, v):
     k1 = rhs(u, dx, D, c, v)
     k2 = rhs(u + dt * k1, dx, D, c, v)
     u_next = u + 0.5 * dt * (k1 + k2)
-    u_next[-1] = 0  # enforce Dirichlet BC at x=1
+    
+    # enforce Dirichlet boundary AFTER RK2 update
+    u_next[-1] = 0
     return u_next
+
 
 def solve_pde_system(pde_func, dt=0.01, T=1.0, **kwargs):
     """

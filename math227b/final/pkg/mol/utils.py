@@ -154,45 +154,57 @@ def spatial_convergence(solve_func, ref_usol, ref_x, N_values, L=1.0, D=0.01, c=
     plt.grid(True, which='both')
     plt.legend()
     plt.show()
-
-
-def temporal_convergence(solve_func, ref_usol, ref_x, dt_values, N=101, L=1.0, D=0.01, c=0.1, v0=1.0, T=1.0):
-    """
-    Compute temporal convergence of MOL solver.
     
-    Parameters
-    ----------
-    solve_func : callable
-        Solver function: solve_func(N, L, D, c, v0, dt, T) -> x, usol, times
-    ref_usol : array_like
-        Reference solution evaluated at ref_x (highly resolved in time)
-    ref_x : array_like
-        Spatial grid points
-    dt_values : list of float
-        List of time steps to test
-    N : int
-        Spatial resolution (fine enough to neglect spatial error)
-    T : float
-        Final time
+
+def temporal_convergence(solve_func, ref_usol, ref_x, dt_values, N=101, L=1.0, D=0.01, c=0.1, v0=1.0, T=1.0, ref_dt=1e-5):
     """
-    errors = []
+    Compute temporal convergence of MOL solver and plot local truncation error (LTE) at single step.
     
+    LTE is computed by comparing a single step of size dt to a highly resolved reference step of size ref_dt.
+    """
+    global_errors = []
+    lte_errors = []
+
+    # Compute single-step reference solution (very small dt)
+    x_ref, usol_ref, _ = solve_func(N=N, L=L, D=D, c=c, v0=v0, dt=ref_dt, T=dt_values[-1])
+    u_ref_interp = np.interp(ref_x, x_ref, usol_ref[0])  # initial condition
+
     for dt in dt_values:
-        x, usol, times = solve_func(N=N, L=L, D=D, c=c, v0=v0, dt=dt, T=T)
-        # Interpolate numerical solution to reference grid
-        u_interp = np.interp(ref_x, x, usol[-1])
-        error = np.linalg.norm(u_interp - ref_usol, ord=2) * np.sqrt(ref_x[1]-ref_x[0])
-        errors.append(error)
-    
-    # Log-log plot
+        # --- Global error over full simulation ---
+        x_num, usol_num, _ = solve_func(N=N, L=L, D=D, c=c, v0=v0, dt=dt, T=T)
+        u_num = np.interp(ref_x, x_num, usol_num[-1])
+        error = np.linalg.norm(u_num - ref_usol, ord=2) * np.sqrt(ref_x[1]-ref_x[0])
+        global_errors.append(error)
+
+        # --- Single-step LTE estimate ---
+        # Take a single step of size dt from the initial condition
+        x_step, usol_step, _ = solve_func(N=N, L=L, D=D, c=c, v0=v0, dt=dt, T=dt)
+        u_num_step = np.interp(ref_x, x_step, usol_step[-1])
+
+        # Reference solution: integrate over the same interval using tiny dt (ref_dt)
+        num_ref_steps = int(np.ceil(dt / ref_dt))
+        x_ref_step, u_ref_step, _ = solve_func(N=N, L=L, D=D, c=c, v0=v0, dt=dt/num_ref_steps, T=dt)
+        u_ref_step_interp = np.interp(ref_x, x_ref_step, u_ref_step[-1])
+
+        # LTE: difference between coarse single step and reference single step
+        lte = np.linalg.norm(u_num_step - u_ref_step_interp, ord=2) * np.sqrt(ref_x[1]-ref_x[0])
+        lte_errors.append(lte)
+
+    # Plot global error and LTE
     plt.figure(figsize=(6,4))
-    plt.loglog(dt_values, errors, 'o-', label='Numerical error')
-    # slope=2 reference
-    C = errors[0] / dt_values[0]**2
-    plt.loglog(dt_values, C*np.array(dt_values)**2, '--', label='slope=2')
+    plt.loglog(dt_values, global_errors, 'o-', label='Global error (final time)')
+    plt.loglog(dt_values, lte_errors, 's-', label='Local truncation error (single step)')
+
+    # Reference slopes
+    C_global = global_errors[0] / dt_values[0]**2
+    plt.loglog(dt_values, C_global*np.array(dt_values)**2, '--', label='slope=2 (global)')
+
+    C_lte = lte_errors[0] / dt_values[0]**3
+    plt.loglog(dt_values, C_lte*np.array(dt_values)**3, '--', label='slope=3 (LTE)')
+
     plt.xlabel('dt')
     plt.ylabel('L2 error')
-    plt.title('Temporal convergence')
+    plt.title('Temporal convergence: Global vs LTE')
     plt.grid(True, which='both')
     plt.legend()
     plt.show()
