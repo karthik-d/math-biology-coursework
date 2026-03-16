@@ -32,13 +32,25 @@ if __name__ == "__main__":
 	ref_usol = usol_ref[-1]  # final time solution as reference
 
 	# Spatial convergence test
-	# print("running spatial convergence test...")
-	# dt_spatial = 1e-5  # small enough for largest N
-	# N_values = np.linspace(201, 501, 20, dtype=int)  # increasing spatial resolution
-	# T_spatial = T_ref
-	# spatial_convergence(lambda N, **kwargs: solve_pde_system(pde_func=given_pde_system, N=N, **kwargs),
-	# 					ref_usol, ref_x, N_values, L=1.0, D=0.01, c=0.1, v0=1.0, dt=dt_spatial, T=T_spatial)
-
+	print("running spatial convergence test...")
+	ref_x = np.linspace(0, 1, 501)  # grid to interpolate errors onto
+	dt_spatial = 1e-5  # small enough for largest N
+	N_values = np.linspace(201, 501, 20, dtype=int)  # increasing spatial resolution
+	T_spatial = T_ref
+	spatial_convergence(
+    lambda N: solve_pde_system(
+        pde_func=given_pde_system,
+        N=N,
+        L=1.0,
+        D=0.01,
+        c=0.1,
+        v0=1.0,
+        dt=dt_spatial,
+        T=T_spatial
+    ),
+    ref_x,
+    N_values
+	)
 
 	# Temporal convergence test
 	print("running temporal convergence test...")
