@@ -103,36 +103,39 @@ if __name__ == "__main__":
 	# 	T=T_temporal
 	# )
 
-	# Define IC functions
+	# Define initial condition functions
 	ic_zero = lambda x: np.zeros_like(x)
 	ic_linear = lambda x: 1.0 - x
 	ic_bump = lambda x: np.exp(-100*(x-0.5)**2)
+	ic_bimodal = lambda x: np.exp(-100*(x-0.3)**2) + 0.8*np.exp(-150*(x-0.7)**2)  # New IC4
 
+	# List of initial conditions with descriptive names
 	IC_cases = [
-		("Zero IC", ic_zero),
-		("Linear IC", ic_linear),
-		("Localized Gaussian Bump", ic_bump)
+		("Zero IC", ic_zero),                           # IC1
+		("Linear IC", ic_linear),                       # IC2
+		("Localized Gaussian Bump", ic_bump),          # IC3
+		("Bimodal Gaussian", ic_bimodal)               # IC4
 	]
 
-	T = 1.0  # final time for simulations
-	for ic_name, u0_func in IC_cases:
+	T = 50.0  # final time for simulations
+	for ic_name, u0_func in IC_cases[3:]:
 		print(f"\n=== Running simulation for {ic_name} ===")
 		
 		# Solve PDE
-		# x, usol, times = solve_pde_system(
-		# 	pde_func=given_pde_system,
-		# 	N=101, L=1.0, D=0.01, c=0.1, v0=1.0, dt=0.001, T=T,
-		# 	u0_func=u0_func
-		# )
+		x, usol, times = solve_pde_system(
+			pde_func=given_pde_system,
+			N=101, L=1.0, D=0.01, c=0.1, v0=1.0, dt=0.001, T=T,
+			u0_func=u0_func
+		)
 		
-		# overlay_times = np.linspace(0, T, 9)
-		# overlay_x = [0.0, 0.25, 0.5, 0.75, 1.0]
-		# plot_pde_solution(
-		# 	x, times, usol,
-		# 	overlay_times=overlay_times,
-		# 	overlay_x=overlay_x,
-		# 	title=f'Solution with {ic_name}'
-		# )
+		overlay_times = np.linspace(0, T, 9)
+		overlay_x = [0.0, 0.25, 0.5, 0.75, 1.0]
+		plot_pde_solution(
+			x, times, usol,
+			overlay_times=overlay_times,
+			overlay_x=overlay_x,
+			title=f'Solution with {ic_name}'
+		)
 		
 		# -----------------------
 		# Reference solution for convergence tests
