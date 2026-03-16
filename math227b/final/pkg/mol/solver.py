@@ -4,15 +4,16 @@ import numpy as np
 def rhs(u, dx, D, c, v):
     N = len(u)
     dudt = np.zeros_like(u)
-    
+
     # Internal points
     dudt[1:N-1] = D * (u[2:] - 2*u[1:N-1] + u[0:N-2]) / dx**2 + v[1:N-1] - c*u[1:N-1]
-    
-    # Boundary x=0 (Neumann: du/dx=0) => u[0] = u[1]
+
+    # Boundary x=0 (Neumann)
     dudt[0] = D * (u[1] - 2*u[0] + u[1]) / dx**2 + v[0] - c*u[0]
-    
-    # Boundary x=1 (Dirichlet: u=0)
-    dudt[-1] = 0
+
+    # Boundary x=1 (Dirichlet)
+    dudt[-1] = 0           # already fine
+    u[-1] = 0              # **enforce Dirichlet on the input** for k2
     return dudt
 
 def rk2_step(u, dt, dx, D, c, v):
