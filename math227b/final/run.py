@@ -103,95 +103,154 @@ if __name__ == "__main__":
 	# 	T=T_temporal
 	# )
 
+	# # Define initial condition functions
+	# ic_zero = lambda x: np.zeros_like(x)
+	# ic_linear = lambda x: 1.0 - x
+	# ic_bump = lambda x: np.exp(-100*(x-0.5)**2)
+	# ic_bimodal = lambda x: np.exp(-100*(x-0.3)**2) + 0.8*np.exp(-150*(x-0.7)**2)  # New IC4
+
+	# # List of initial conditions with descriptive names
+	# IC_cases = [
+	# 	("Zero IC", ic_zero),                           # IC1
+	# 	("Linear IC", ic_linear),                       # IC2
+	# 	("Localized Gaussian Bump", ic_bump),          # IC3
+	# 	("Bimodal Gaussian", ic_bimodal)               # IC4
+	# ]
+
+	# T = 50.0  # final time for simulations
+	# for ic_name, u0_func in IC_cases[3:]:
+	# 	print(f"\n=== Running simulation for {ic_name} ===")
+		
+	# 	# Solve PDE
+	# 	x, usol, times = solve_pde_system(
+	# 		pde_func=given_pde_system,
+	# 		N=101, L=1.0, D=0.01, c=0.1, v0=1.0, dt=0.001, T=T,
+	# 		u0_func=u0_func
+	# 	)
+		
+	# 	overlay_times = np.linspace(0, T, 9)
+	# 	overlay_x = [0.0, 0.25, 0.5, 0.75, 1.0]
+	# 	plot_pde_solution(
+	# 		x, times, usol,
+	# 		overlay_times=overlay_times,
+	# 		overlay_x=overlay_x,
+	# 		title=f'Solution with {ic_name}'
+	# 	)
+		
+	# 	# -----------------------
+	# 	# Reference solution for convergence tests
+	# 	# -----------------------
+	# 	N_ref = 1001
+	# 	dt_ref = 1e-5
+	# 	T_ref = 0.2  # shorter time for convergence study
+	# 	x_ref, usol_ref, times_ref = solve_pde_system(
+	# 		pde_func=given_pde_system,
+	# 		N=N_ref, L=1.0, D=0.01, c=0.1, v0=1.0, dt=dt_ref, T=T_ref,
+	# 		u0_func=u0_func
+	# 	)
+	# 	ref_x = x_ref
+	# 	ref_usol = usol_ref[-1]  # final time solution as reference
+
+	# 	# -----------------------
+	# 	# Spatial convergence test
+	# 	# -----------------------
+	# 	print(f"Running spatial convergence test for {ic_name}...")
+	# 	ref_x_interp = np.linspace(0, 1, 501)  # grid to interpolate errors onto
+	# 	dt_spatial = 1e-5  # small enough to minimize temporal error
+	# 	N_values = np.linspace(201, 501, 20, dtype=int)  # increasing spatial resolution
+	# 	T_spatial = T_ref
+	# 	spatial_convergence(
+	# 		lambda N: solve_pde_system(
+	# 			pde_func=given_pde_system,
+	# 			N=N,
+	# 			L=1.0,
+	# 			D=0.01,
+	# 			c=0.1,
+	# 			v0=1.0,
+	# 			dt=dt_spatial,
+	# 			T=T_spatial,
+	# 			u0_func=u0_func
+	# 		),
+	# 		ref_x_interp,
+	# 		N_values,
+	# 		T=T_spatial, 
+	# 		title=ic_name
+	# 	)
+
+	# 	# -----------------------
+	# 	# Temporal convergence test
+	# 	# -----------------------
+	# 	print(f"Running temporal convergence test for {ic_name}...")
+	# 	N_temporal = 601  # fine enough spatial grid
+	# 	T_temporal = T_ref
+	# 	dt_values = np.linspace(7e-5, 1.25e-4, 50)
+	# 	temporal_convergence(
+	# 		lambda dt: solve_pde_system(
+	# 			pde_func=given_pde_system, dt=dt,
+	# 			N=N_temporal, L=1.0, D=0.01, c=0.1, v0=1.0,
+	# 			T=T_temporal, u0_func=u0_func  # bind IC here
+	# 		),
+	# 		ref_usol,
+	# 		ref_x,
+	# 		dt_values, 
+	# 		title=ic_name
+	# 	)
+
+
+	# -------------------------
+	# PDE definition for sinusoidal source
+	# -------------------------
+	def pde_sinusoidal_source(N=101, L=1.0, D=0.05, c=0.1, v0=1.0, u0_func=None):
+		"""
+		Sinusoidal source PDE:
+			du/dt = D d2u/dx2 + v(x) - c u
+		with BC: du/dx = 0 at x=0, u=0 at x=1
+		Source: v(x) = v0 * sin(pi x), x in (0,1)
+		"""
+		x = np.linspace(0, L, N)
+		dx = L / (N-1)
+		
+		# Initial condition
+		if u0_func is None:
+			u0 = np.zeros(N)
+		else:
+			u0 = u0_func(x)
+		
+		# Sinusoidal source
+		v = v0 * np.sin(np.pi * x)
+		
+		return x, u0, dx, v, D, c
+
+	# -------------------------
 	# Define initial condition functions
-	ic_zero = lambda x: np.zeros_like(x)
+	# -------------------------
 	ic_linear = lambda x: 1.0 - x
-	ic_bump = lambda x: np.exp(-100*(x-0.5)**2)
-	ic_bimodal = lambda x: np.exp(-100*(x-0.3)**2) + 0.8*np.exp(-150*(x-0.7)**2)  # New IC4
 
 	# List of initial conditions with descriptive names
-	IC_cases = [
-		("Zero IC", ic_zero),                           # IC1
-		("Linear IC", ic_linear),                       # IC2
-		("Localized Gaussian Bump", ic_bump),          # IC3
-		("Bimodal Gaussian", ic_bimodal)               # IC4
+	IC_cases = [                       # IC1
+		("Linear IC", ic_linear),                      # IC4
 	]
 
-	T = 50.0  # final time for simulations
-	for ic_name, u0_func in IC_cases[3:]:
-		print(f"\n=== Running simulation for {ic_name} ===")
-		
-		# Solve PDE
+	# -------------------------
+	# Solve and plot each IC
+	# -------------------------
+	T = 50.0  # final time
+	N = 101
+	dt = 0.001
+
+	for name, u0_func in IC_cases:
 		x, usol, times = solve_pde_system(
-			pde_func=given_pde_system,
-			N=101, L=1.0, D=0.01, c=0.1, v0=1.0, dt=0.001, T=T,
+			pde_func=pde_sinusoidal_source,
+			N=N, D=0.05, c=0.1, v0=1.0, dt=dt, T=T,
 			u0_func=u0_func
 		)
-		
+
 		overlay_times = np.linspace(0, T, 9)
 		overlay_x = [0.0, 0.25, 0.5, 0.75, 1.0]
+		
 		plot_pde_solution(
 			x, times, usol,
 			overlay_times=overlay_times,
 			overlay_x=overlay_x,
-			title=f'Solution with {ic_name}'
-		)
-		
-		# -----------------------
-		# Reference solution for convergence tests
-		# -----------------------
-		N_ref = 1001
-		dt_ref = 1e-5
-		T_ref = 0.2  # shorter time for convergence study
-		x_ref, usol_ref, times_ref = solve_pde_system(
-			pde_func=given_pde_system,
-			N=N_ref, L=1.0, D=0.01, c=0.1, v0=1.0, dt=dt_ref, T=T_ref,
-			u0_func=u0_func
-		)
-		ref_x = x_ref
-		ref_usol = usol_ref[-1]  # final time solution as reference
-
-		# -----------------------
-		# Spatial convergence test
-		# -----------------------
-		print(f"Running spatial convergence test for {ic_name}...")
-		ref_x_interp = np.linspace(0, 1, 501)  # grid to interpolate errors onto
-		dt_spatial = 1e-5  # small enough to minimize temporal error
-		N_values = np.linspace(201, 501, 20, dtype=int)  # increasing spatial resolution
-		T_spatial = T_ref
-		spatial_convergence(
-			lambda N: solve_pde_system(
-				pde_func=given_pde_system,
-				N=N,
-				L=1.0,
-				D=0.01,
-				c=0.1,
-				v0=1.0,
-				dt=dt_spatial,
-				T=T_spatial,
-				u0_func=u0_func
-			),
-			ref_x_interp,
-			N_values,
-			T=T_spatial, 
-			title=ic_name
-		)
-
-		# -----------------------
-		# Temporal convergence test
-		# -----------------------
-		print(f"Running temporal convergence test for {ic_name}...")
-		N_temporal = 601  # fine enough spatial grid
-		T_temporal = T_ref
-		dt_values = np.linspace(7e-5, 1.25e-4, 50)
-		temporal_convergence(
-			lambda dt: solve_pde_system(
-				pde_func=given_pde_system, dt=dt,
-				N=N_temporal, L=1.0, D=0.01, c=0.1, v0=1.0,
-				T=T_temporal, u0_func=u0_func  # bind IC here
-			),
-			ref_usol,
-			ref_x,
-			dt_values, 
-			title=ic_name
+			title=f"Sinusoidal Source PDE Solution ({name})"
 		)
