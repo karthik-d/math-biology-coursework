@@ -9,18 +9,51 @@ from pkg.mol.utils import given_pde_system, plot_pde_solution, temporal_converge
 if __name__ == "__main__":
 
 	# # Solve the PDE
-	# T = 100.0  # final time
-	# x, usol, times = solve_pde_system(
-	# 	pde_func=given_pde_system,
-	# 	N=101, L=1.0, D=0.01, c=0.1, v0=1.0, dt=0.001, T=T
-	# )
+	T = 100.0  # final time
+	x, usol, times = solve_pde_system(
+		pde_func=given_pde_system,
+		N=101, L=1.0, D=0.01, c=0.1, v0=1.0, dt=0.001, T=T
+	)
+	# Assume x, usol, times are obtained from solver
+	overlay_times = np.linspace(0, T, 9)
+	overlay_x = [0.0, 0.25, 0.5, 0.75, 1.0]
+	plot_pde_solution(x, times, usol, overlay_times=overlay_times, overlay_x=overlay_x, title='Solution with Given IC')
 
-	# # Assume x, usol, times are obtained from solver
-	# overlay_times = np.linspace(0, T, 9)
-	# overlay_x = [0.0, 0.25, 0.5, 0.75, 1.0]
-	# plot_pde_solution(x, times, usol, overlay_times=overlay_times, overlay_x=overlay_x)
+	# Case 1: Zero initial condition everywhere.
+	T = 100.0  # final time
+	x, usol, times = solve_pde_system(
+		pde_func=given_pde_system,
+		N=101, L=1.0, D=0.01, c=0.1, v0=1.0, dt=0.001, T=T,
+		u0_func=lambda x: np.zeros_like(x)  # IC: zero everywhere
+	)
+	overlay_times = np.linspace(0, T, 9)
+	overlay_x = [0.0, 0.25, 0.5, 0.75, 1.0]
+	plot_pde_solution(x, times, usol, overlay_times=overlay_times, overlay_x=overlay_x, title='Solution with Zero IC')
 
-	# Reference solution: use very fine dx and dt
+	# Case 2: Linear initial condition.
+	T = 100.0  # final time
+	x, usol, times = solve_pde_system(
+		pde_func=given_pde_system,
+		N=101, L=1.0, D=0.01, c=0.1, v0=1.0, dt=0.001, T=T,
+		u0_func=lambda x: 1.0 - x  # IC: linear from 1 at x=0 to 0 at x=1
+	)
+	overlay_times = np.linspace(0, T, 9)
+	overlay_x = [0.0, 0.25, 0.5, 0.75, 1.0]
+	plot_pde_solution(x, times, usol, overlay_times=overlay_times, overlay_x=overlay_x, title='Solution with Linear IC')
+
+	# Case 3: Localized Gaussian bump.
+	T = 100.0  # final time
+	x, usol, times = solve_pde_system(
+		pde_func=given_pde_system,
+		N=101, L=1.0, D=0.01, c=0.1, v0=1.0, dt=0.001, T=T,
+		u0_func=lambda x: np.exp(-100*(x-0.5)**2)  # IC: localized bump at center
+	)
+	overlay_times = np.linspace(0, T, 9)
+	overlay_x = [0.0, 0.25, 0.5, 0.75, 1.0]
+	plot_pde_solution(x, times, usol, overlay_times=overlay_times, overlay_x=overlay_x, title='Solution with Localized Gaussian Bump')
+
+
+	# # Reference solution
 	N_ref = 1001      # fine spatial resolution
 	dt_ref = 1e-5    # very small dt for stability
 	T_ref = 0.2      # final time for reference solution

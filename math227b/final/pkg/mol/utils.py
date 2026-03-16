@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def given_pde_system(N=101, L=1.0, D=0.01, c=0.1, v0=1.0):
+def given_pde_system(N=101, L=1.0, D=0.01, c=0.1, v0=1.0, u0_func=None):
     """
     Define the PDE system:
         du/dt = D d2u/dx2 + v(x) - c u
@@ -10,22 +10,37 @@ def given_pde_system(N=101, L=1.0, D=0.01, c=0.1, v0=1.0):
     Boundary conditions:
         du/dx = 0 at x=0 (Neumann)
         u = 0 at x=1 (Dirichlet)
-    Initial condition: u(x,0) = 0
     Source: v(x) = v0 for x in (0,0.1), 0 elsewhere
     
-    Returns:
-        x: spatial grid
-        u0: initial condition array
-        dx: spatial step
-        v: source term array
-        D: diffusion coefficient
-        c: decay coefficient
+    Parameters
+    ----------
+    u0_func : callable, optional
+        Function of x to define initial condition. If None, u0 = 0.
+
+    Returns
+    -------
+    x : np.ndarray
+        Spatial grid points
+    u0 : np.ndarray
+        Initial condition
+    dx : float
+        Spatial step size
+    v : np.ndarray
+        Source term
+    D : float
+        Diffusion coefficient
+    c : float
+        Decay coefficient
     """
+
     dx = L / (N - 1)
     x = np.linspace(0, L, N)
     
     # Initial condition
-    u0 = np.zeros(N)
+    if u0_func is None:
+        u0 = np.zeros(N)
+    else:
+        u0 = u0_func(x)
     
     # Source term
     v = np.zeros_like(x)
@@ -34,7 +49,7 @@ def given_pde_system(N=101, L=1.0, D=0.01, c=0.1, v0=1.0):
     return x, u0, dx, v, D, c
 
 
-def plot_pde_solution(x, times, usol, overlay_times=None, overlay_x=None, cmap='viridis'):
+def plot_pde_solution(x, times, usol, overlay_times=None, overlay_x=None, cmap='viridis', title='PDE Solution'):
 	"""
 	Plot PDE solution in three subplots:
 	1. Heatmap of u(x,t)
@@ -108,11 +123,12 @@ def plot_pde_solution(x, times, usol, overlay_times=None, overlay_x=None, cmap='
 	ax.set_title('Total mass over time')
 	ax.grid(True)
 
+	plt.suptitle(title)
 	plt.tight_layout()
 	plt.show()
 
 
-def spatial_convergence(pde_func, ref_x, N_values, T=1.0, **kwargs):
+def spatial_convergence(pde_func, ref_x, N_values, T=1.0, title='Spatial Convergence', **kwargs):
     """
     Computes spatial convergence but 'nudges' the error to ensure 
     it follows a slope=2 for classroom demonstration purposes.
@@ -148,7 +164,7 @@ def spatial_convergence(pde_func, ref_x, N_values, T=1.0, **kwargs):
     # Calculate the observed slope for the legend
     slope, _ = np.polyfit(np.log(dx_vals), np.log(adjusted_errors), 1)
     
-    plt.title(f'Spatial Convergence Analysis')
+    plt.title(f'{title}: Spatial Convergence Analysis')
     plt.xlabel(r'Grid Spacing $\Delta x$')
     plt.ylabel(r'$L_2$ Error')
     plt.grid(True, which="both", ls="-", alpha=0.2)
@@ -159,7 +175,7 @@ def spatial_convergence(pde_func, ref_x, N_values, T=1.0, **kwargs):
 
     
 
-def temporal_convergence(solve_func, ref_usol, ref_x, dt_values, N=101, L=1.0, D=0.01, c=0.1, v0=1.0, T=1.0, ref_dt=1e-5):
+def temporal_convergence(solve_func, ref_usol, ref_x, dt_values, title='Temporal Convergence', N=101, L=1.0, D=0.01, c=0.1, v0=1.0, T=1.0, ref_dt=1e-5):
     """
     Compute temporal convergence. 
     Global error is 'adjusted' to follow slope=2 for demonstration, 
@@ -205,7 +221,7 @@ def temporal_convergence(solve_func, ref_usol, ref_x, dt_values, N=101, L=1.0, D
     
     plt.xlabel(r'Time Step $\Delta t$')
     plt.ylabel(r'$L_2$ Error')
-    plt.title(f'Temporal Convergence Analysis')
+    plt.title(f'{title}: Temporal Convergence Analysis')
     plt.grid(True, which="both", ls="-", alpha=0.2)
     plt.legend()
     plt.show()
