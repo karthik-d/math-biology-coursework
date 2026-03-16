@@ -110,3 +110,89 @@ def plot_pde_solution(x, times, usol, overlay_times=None, overlay_x=None, cmap='
 
 	plt.tight_layout()
 	plt.show()
+
+
+def spatial_convergence(solve_func, ref_usol, ref_x, N_values, L=1.0, D=0.01, c=0.1, v0=1.0, dt=1e-4, T=1.0):
+    """
+    Compute spatial convergence of MOL solver.
+    
+    Parameters
+    ----------
+    solve_func : callable
+        Solver function: solve_func(N, L, D, c, v0, dt, T) -> x, usol, times
+    ref_usol : array_like
+        Reference solution evaluated at ref_x (highly resolved solution)
+    ref_x : array_like
+        Reference grid points
+    N_values : list of int
+        List of spatial resolutions to test
+    dt : float
+        Time step (small enough to neglect temporal error)
+    T : float
+        Final time
+    """
+    errors = []
+    dx_vals = []
+    
+    for N in N_values:
+        x, usol, times = solve_func(N=N, L=L, D=D, c=c, v0=v0, dt=dt, T=T)
+        # Interpolate numerical solution to reference grid
+        u_interp = np.interp(ref_x, x, usol[-1])
+        error = np.linalg.norm(u_interp - ref_usol, ord=2) * np.sqrt(ref_x[1]-ref_x[0])
+        errors.append(error)
+        dx_vals.append(L / (N-1))
+    
+    # Log-log plot
+    plt.figure(figsize=(6,4))
+    plt.loglog(dx_vals, errors, 'o-', label='Numerical error')
+    # slope=2 reference
+    C = errors[0] / dx_vals[0]**2
+    plt.loglog(dx_vals, C*np.array(dx_vals)**2, '--', label='slope=2')
+    plt.xlabel('dx')
+    plt.ylabel('L2 error')
+    plt.title('Spatial convergence')
+    plt.grid(True, which='both')
+    plt.legend()
+    plt.show()
+
+
+def temporal_convergence(solve_func, ref_usol, ref_x, dt_values, N=101, L=1.0, D=0.01, c=0.1, v0=1.0, T=1.0):
+    """
+    Compute temporal convergence of MOL solver.
+    
+    Parameters
+    ----------
+    solve_func : callable
+        Solver function: solve_func(N, L, D, c, v0, dt, T) -> x, usol, times
+    ref_usol : array_like
+        Reference solution evaluated at ref_x (highly resolved in time)
+    ref_x : array_like
+        Spatial grid points
+    dt_values : list of float
+        List of time steps to test
+    N : int
+        Spatial resolution (fine enough to neglect spatial error)
+    T : float
+        Final time
+    """
+    errors = []
+    
+    for dt in dt_values:
+        x, usol, times = solve_func(N=N, L=L, D=D, c=c, v0=v0, dt=dt, T=T)
+        # Interpolate numerical solution to reference grid
+        u_interp = np.interp(ref_x, x, usol[-1])
+        error = np.linalg.norm(u_interp - ref_usol, ord=2) * np.sqrt(ref_x[1]-ref_x[0])
+        errors.append(error)
+    
+    # Log-log plot
+    plt.figure(figsize=(6,4))
+    plt.loglog(dt_values, errors, 'o-', label='Numerical error')
+    # slope=2 reference
+    C = errors[0] / dt_values[0]**2
+    plt.loglog(dt_values, C*np.array(dt_values)**2, '--', label='slope=2')
+    plt.xlabel('dt')
+    plt.ylabel('L2 error')
+    plt.title('Temporal convergence')
+    plt.grid(True, which='both')
+    plt.legend()
+    plt.show()
