@@ -18,3 +18,10 @@
 - Implementation and tests of the Newton-Raphson method on a simple, biologically inspired 2D ODE system to numerically solve for steady state(s).
 - [Docs](./math227b/hw03/docs)
 - [Code](./math227b/hw03)
+
+#### 4. Adam-Bashforth Predictor-Corrector for Initial Value Problems (IVPs)
+
+- Implementation and tests of the PC method to solve ODEs propagting from an initial condition.
+- Parameter fitting to ODE models of tumor growth using non-linear least-squares optimization.
+- [Docs](./math227b/hw04/docs)
+- [Code](./math227b/hw04)
