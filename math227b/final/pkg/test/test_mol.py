@@ -86,6 +86,64 @@ class TestMOLSolver(unittest.TestCase):
         x, u0, dx, v, D, c = pde_diffusion_only()
         u1 = rk2_step(u0, dt=0.001, dx=dx, D=D, c=c, v=v)
         self.assertTrue(np.all(np.isfinite(u1)))
+        
+
+# test_complex_pdes.py
+import unittest
+import numpy as np
+from mol_solver import solve_pde_system
+
+# Import the complex PDE definitions
+from mol_solver import pde_sinusoidal_source, pde_double_gaussian, pde_step_source
+
+class TestComplexPDEs(unittest.TestCase):
+
+    def test_sinusoidal_source_steady_state(self):
+        """Test sinusoidal source PDE: solution should reflect source shape at steady state"""
+        T = 2.0
+        dt = 0.001
+        x, usol, times = solve_pde_system(pde_sinusoidal_source, dt=dt, T=T, N=51, D=0.05, c=0.1, v0=1.0)
+        u_final = usol[-1]
+
+        # Steady state check: change between last two time steps is small
+        delta = np.linalg.norm(usol[-1] - usol[-2])
+        self.assertLess(delta, 1e-3, "Solution has not reached steady state for sinusoidal source.")
+
+        # Check that peak roughly aligns with source peak at x ~ 0.5
+        peak_index = np.argmax(u_final)
+        self.assertAlmostEqual(x[peak_index], 0.5, delta=0.05)
+
+    def test_double_gaussian_bumps_conservation(self):
+        """Test PDE with two initial Gaussian bumps: mass should diffuse but not overshoot"""
+        T = 1.5
+        dt = 0.001
+        x, usol, times = solve_pde_system(pde_double_gaussian, dt=dt, T=T, N=101, D=0.02, c=0.05, v0=1.0)
+        u_final = usol[-1]
+
+        # Maximum value should not increase from initial peaks
+        max_initial = np.max(usol[0])
+        max_final = np.max(u_final)
+        self.assertLessEqual(max_final, max_initial + 1e-6, "Solver overshot maximum in double Gaussian bumps.")
+
+        # Solution should remain positive
+        self.assertTrue(np.all(u_final >= 0), "Negative values found in double Gaussian bumps solution.")
+
+    def test_step_source_strong_decay(self):
+        """Test PDE with step source and strong decay: solution should remain localized"""
+        T = 1.0
+        dt = 0.0005
+        x, usol, times = solve_pde_system(pde_step_source, dt=dt, T=T, N=101, D=0.01, c=1.0, v0=2.0)
+        u_final = usol[-1]
+
+        # Check that solution outside step source remains small
+        outside_indices = np.where((x <= 0.2) | (x >= 0.4))
+        self.assertTrue(np.all(u_final[outside_indices] < 1e-2),
+                        "Solution outside step source is too large under strong decay.")
+
+        # Check that solution inside step source is nonzero
+        inside_indices = np.where((x > 0.2) & (x < 0.4))
+        self.assertTrue(np.all(u_final[inside_indices] > 0.1),
+                        "Solution inside step source is unexpectedly small.")
 
 # ---------------------------
 # Run the tests
