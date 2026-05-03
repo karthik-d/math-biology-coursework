@@ -19,7 +19,7 @@ plt.rcParams.update({
 # ─── Simulation Parameters ──────────────────────────────────────────────────
 n_samples = 100000
 alpha, beta, sigma = 0.5, 4.0, 2.0
-t_eval = [1, 5, 20]
+t_eval = [1, 2, 3, 4, 5, 20]
 
 np.random.seed(42)
 
@@ -37,12 +37,12 @@ for t in range(1, 21):
 fig1, ax1 = plt.subplots(figsize=(8, 5))
 ax1.hist(Z_history[1], bins=80, density=True, alpha=0.7, 
          color="#20B2AA", edgecolor="white", label="$t = 1$")
+ax1.hist(Z_history[2], bins=80, density=True, alpha=0.7, 
+         color="#FF7F50", edgecolor="white", label="$t = 2$")
 ax1.hist(Z_history[3], bins=80, density=True, alpha=0.7, 
-         color="#FF7F50", edgecolor="white", label="$t = 3$")
-ax1.hist(Z_history[5], bins=80, density=True, alpha=0.7, 
-         color="#FF7F50", edgecolor="white", label="$t = 5$")
-ax1.hist(Z_history[7], bins=80, density=True, alpha=0.7, 
-         color="#FF7F50", edgecolor="white", label="$t = 7$")
+         color="green", edgecolor="white", label="$t = 3$")
+ax1.hist(Z_history[4], bins=80, density=True, alpha=0.7, 
+         color="purple", edgecolor="white", label="$t = 4$")
 
 ax1.set_xlabel("$Z_t$")
 ax1.set_ylabel("Probability Density")
