@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+from matplotlib.lines import Line2D
+
 
 def simulate_predator_prey(Y1_0=50, Y2_0=100, c1=1.0, c2=0.005, c3=0.6, t_max=50.0):
     """
@@ -61,34 +63,62 @@ def simulate_predator_prey(Y1_0=50, Y2_0=100, c1=1.0, c2=0.005, c3=0.6, t_max=50
         
     return times, Y1_vals, Y2_vals
 
-# Run the simulation
-# Setting a seed ensures reproducibility for the assignment write-up
+
+# Run the simulation 5 times
 np.random.seed(42)
 random.seed(42)
-times, Y1_out, Y2_out = simulate_predator_prey(t_max=50.0)
+
+num_runs = 3
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+runs_data = []
+
+for i in range(num_runs):
+    times, Y1_out, Y2_out = simulate_predator_prey(t_max=50.0)
+    runs_data.append((times, Y1_out, Y2_out))
 
 # ==========================================
-# Plot 1: Time Course
+# Plot 1: Time Course (5 Runs)
 # ==========================================
-plt.figure(figsize=(10, 5))
-plt.step(times, Y1_out, label='Prey ($Y_1$)', color='#1f77b4', where='post', linewidth=1.5)
-plt.step(times, Y2_out, label='Predator ($Y_2$)', color='#d62728', where='post', linewidth=1.5)
+plt.figure(figsize=(12, 6))
+
+for i, (times, Y1_out, Y2_out) in enumerate(runs_data):
+    # Prey (Solid line)
+    plt.step(times, Y1_out, where='post', linestyle='-', color=colors[i], alpha=0.7, linewidth=1.5)
+    # Predator (Dashed line)
+    plt.step(times, Y2_out, where='post', linestyle='--', color=colors[i], alpha=0.7, linewidth=1.5)
+
 plt.xlabel('Time')
 plt.ylabel('Population')
-plt.title('Stochastic Predator-Prey Model: Time Course')
-plt.legend()
+plt.title('Stochastic Predator-Prey Model: Time Course (3 Runs)')
+
+# Create a custom legend for clarity
+custom_lines = [
+    Line2D([0], [0], color='black', lw=2, linestyle='-', label='Prey ($Y_1$)'),
+    Line2D([0], [0], color='black', lw=2, linestyle='--', label='Predator ($Y_2$)')
+]
+for i in range(num_runs):
+    custom_lines.append(Line2D([0], [0], color=colors[i], lw=2, label=f'Run {i+1}'))
+
+plt.legend(handles=custom_lines, loc='upper left', bbox_to_anchor=(1.02, 1), borderaxespad=0.)
 plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
 plt.savefig('time_course.png', dpi=300, bbox_inches='tight')
 plt.show()
 
 # ==========================================
-# Plot 2: Phase Plot
+# Plot 2: Phase Plot (5 Runs)
 # ==========================================
-plt.figure(figsize=(8, 6))
-plt.plot(Y1_out, Y2_out, color='purple', alpha=0.7, linewidth=1)
+plt.figure(figsize=(9, 7))
+
+for i, (times, Y1_out, Y2_out) in enumerate(runs_data):
+    # No step plot needed for phase plane, standard plot handles orbit trajectories well
+    plt.plot(Y1_out, Y2_out, color=colors[i], alpha=0.6, linewidth=1.5, label=f'Run {i+1}')
+
 plt.xlabel('Prey Population ($Y_1$)')
 plt.ylabel('Predator Population ($Y_2$)')
-plt.title('Stochastic Predator-Prey Model: Phase Plot')
+plt.title('Stochastic Predator-Prey Model: Phase Plot (3 Runs)')
+plt.legend(loc='upper right')
 plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
 plt.savefig('phase_plot.png', dpi=300, bbox_inches='tight')
 plt.show()
